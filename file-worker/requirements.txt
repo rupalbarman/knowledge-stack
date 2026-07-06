@@ -1,0 +1,6 @@
+saq[web]>=0.13
+redis>=5.0
+pymilvus>=2.5
+httpx>=0.27
+pydantic>=2.13.4
+pydantic-settings>=2.14.2

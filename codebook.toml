@@ -1,0 +1,7 @@
+words = [
+    "ETCD",
+    "MINIO",
+    "RUSTFS",
+    "SAQ",
+    "milvus",
+]
