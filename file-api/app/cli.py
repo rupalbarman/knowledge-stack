@@ -4,9 +4,8 @@ import os
 from uuid import uuid4
 
 import asyncpg
-from dotenv import load_dotenv
-
 from argon2 import PasswordHasher
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -15,8 +14,10 @@ _hasher = PasswordHasher()
 
 DB_URL = os.getenv("DATABASE_URL")
 
+
 def hash_password(password: str) -> str:
     return _hasher.hash(password)
+
 
 async def create_user(email: str, password: str, project_name: str) -> None:
     global DB_URL

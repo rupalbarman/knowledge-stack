@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 
 from app.db import get_pool
 from app.dependencies import get_current_project
-from app.models import FileOut
+from app.models import FileOut, TaskOut
 from app.queue import queue
 from app.repositories import files as files_repo
 from app.repositories import folders as folders_repo
@@ -37,6 +37,34 @@ async def get_file(file_id: UUID, project=Depends(get_current_project)) -> FileO
     return FileOut(**dict(file))
 
 
+@router.post("/{file_id}/sync", response_model=TaskOut)
+async def sync_file(file_id: UUID, project=Depends(get_current_project)) -> TaskOut:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        file = await files_repo.get_by_id_in_project(conn, file_id, project["id"])
+        if file is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="file not found"
+            )
+
+        async with conn.transaction():
+            task_id = uuid4()
+            task = await tasks_repo.create(
+                conn,
+                task_id,
+                project["id"],
+                file["id"],
+                file["name"],
+                task_type="vectorize",
+                reason="manual",
+            )
+            await files_repo.set_latest_task(conn, file["id"], task_id)
+
+    await queue.enqueue("process_file", task_id=str(task_id))
+
+    return TaskOut(**dict(task))
+
+
 @router.delete("/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_file(file_id: UUID, project=Depends(get_current_project)) -> None:
     pool = get_pool()
@@ -48,7 +76,21 @@ async def delete_file(file_id: UUID, project=Depends(get_current_project)) -> No
             )
 
         await delete_object(file["storage_key"])
-        await files_repo.delete(conn, file_id, project["id"])
+
+        async with conn.transaction():
+            task_id = uuid4()
+            await tasks_repo.create(
+                conn,
+                task_id,
+                project["id"],
+                file_id,
+                file["name"],
+                task_type="delete_vectors",
+                reason="delete",
+            )
+            await files_repo.delete(conn, file_id, project["id"])
+
+    await queue.enqueue("delete_file_vectors", task_id=str(task_id))
 
 
 @router.post("", response_model=FileOut, status_code=status.HTTP_201_CREATED)
@@ -79,6 +121,7 @@ async def create_file(
                     detail="folder_id does not belong to your project",
                 )
 
+        # todo(Rupal): change to allow batch upload instead of loading in memory
         contents = await file.read()
         file_id = uuid4()
         storage_key = f"{project['id']}/{file_id}"
@@ -105,7 +148,15 @@ async def create_file(
                 )
 
             task_id = uuid4()
-            await tasks_repo.create(conn, task_id, project["id"], record["id"])
+            await tasks_repo.create(
+                conn,
+                task_id,
+                project["id"],
+                record["id"],
+                record["name"],
+                task_type="vectorize",
+                reason="upload",
+            )
             await files_repo.set_latest_task(conn, record["id"], task_id)
 
     # todo(Rupal): Notice enqueue is outside the transaction, but any failure above will skip this call so we are good

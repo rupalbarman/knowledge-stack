@@ -1,4 +1,4 @@
--- Every id is supplied by the app (uuid4()) on insert, never DB-generated.
+-- Every id is supplied by the app uuid4()
 CREATE TABLE users (
     id UUID PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
@@ -6,9 +6,8 @@ CREATE TABLE users (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- A project is the tenant boundary: every file/folder belongs to exactly one.
--- owner_id is UNIQUE to enforce 1 user <-> 1 project; sharing (many users per
--- project) will relax this later.
+-- Project is the tenant boundary
+-- owner_id is UNIQUE to enforce 1 user <-> 1 project; Might change we include project sharing
 CREATE TABLE projects (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL,
