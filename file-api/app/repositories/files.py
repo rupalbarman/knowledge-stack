@@ -40,6 +40,12 @@ async def list_storage_keys_in_folders(
     return [r["storage_key"] for r in rows]
 
 
+async def set_latest_task(conn: DBConnection, file_id: UUID, task_id: UUID) -> None:
+    await conn.execute(
+        "UPDATE files SET latest_task_id = $1 WHERE id = $2", task_id, file_id
+    )
+
+
 async def delete(conn: DBConnection, file_id: UUID, project_id: UUID) -> None:
     await conn.execute(
         "DELETE FROM files WHERE id = $1 AND project_id = $2", file_id, project_id

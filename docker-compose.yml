@@ -161,17 +161,20 @@ services:
       - .env
     environment:
       REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://${POSTGRES_USER:-knowledge_stack}:${POSTGRES_PASSWORD:-knowledge_stack}@postgres:5432/${POSTGRES_DB:-knowledge_stack}
       MILVUS_URI: http://milvus:19530
       RUSTFS_URL: http://rustfs:9000
       RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-minioadmin}
       RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-minioadmin}
-      RUSTFS_BUCKET: ${APP_BUCKET_NAME:-files}
+      RUSTFS_BUCKET_NAME: ${APP_BUCKET_NAME:-content-bucket}
     ports:
       - "8081:8081" # saq web UI
     volumes:
       - ./file-worker:/app
     depends_on:
       redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
       milvus:
         condition: service_healthy

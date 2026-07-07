@@ -1,5 +1,6 @@
 from uuid import UUID
 
+import asyncpg
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -12,7 +13,7 @@ from app.security import decode_access_token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> asyncpg.Record:
     credentials_error = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid or expired token",
@@ -30,7 +31,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 
-async def get_current_project(user=Depends(get_current_user)):
+async def get_current_project(user=Depends(get_current_user)) -> asyncpg.Record:
     pool = get_pool()
     async with pool.acquire() as conn:
         project = await projects_repo.get_by_owner(conn, user["id"])

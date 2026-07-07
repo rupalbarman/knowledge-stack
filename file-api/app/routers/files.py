@@ -9,6 +9,7 @@ from app.models import FileOut
 from app.queue import queue
 from app.repositories import files as files_repo
 from app.repositories import folders as folders_repo
+from app.repositories import tasks as tasks_repo
 from app.storage import delete_object, upload_bytes
 
 router = APIRouter(prefix="/files", tags=["files"])
@@ -82,31 +83,32 @@ async def create_file(
         file_id = uuid4()
         storage_key = f"{project['id']}/{file_id}"
 
+        # todo(Rupal): Notice how s3 upload is done before the file creation - possible orphaned object, handle it
         await upload_bytes(storage_key, contents, file.content_type)
 
-        try:
-            record = await files_repo.create(
-                conn,
-                file_id=file_id,
-                project_id=project["id"],
-                folder_id=parsed_folder_id,
-                name=file.filename or f"File_{file_id}",
-                content_type=file.content_type,
-                size_bytes=len(contents),
-                storage_key=storage_key,
-            )
-        except asyncpg.UniqueViolationError:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="a file with this name already exists here",
-            )
+        async with conn.transaction():
+            try:
+                record = await files_repo.create(
+                    conn,
+                    file_id=file_id,
+                    project_id=project["id"],
+                    folder_id=parsed_folder_id,
+                    name=file.filename or f"File_{file_id}",
+                    content_type=file.content_type,
+                    size_bytes=len(contents),
+                    storage_key=storage_key,
+                )
+            except asyncpg.UniqueViolationError:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="a file with this name already exists here",
+                )
 
-    await queue.enqueue(
-        "process_file",
-        file_id=str(record["id"]),
-        project_id=str(project["id"]),
-        storage_key=record["storage_key"],
-        name=record["name"],
-    )
+            task_id = uuid4()
+            await tasks_repo.create(conn, task_id, project["id"], record["id"])
+            await files_repo.set_latest_task(conn, record["id"], task_id)
+
+    # todo(Rupal): Notice enqueue is outside the transaction, but any failure above will skip this call so we are good
+    await queue.enqueue("process_file", task_id=str(task_id))
 
     return FileOut(**dict(record))
