@@ -49,3 +49,15 @@ class FileOut(BaseModel):
     size_bytes: int
     storage_key: str
     created_at: datetime
+
+
+class TaskOut(BaseModel):
+    id: UUID
+    project_id: UUID
+    file_id: UUID
+    type: str
+    status: str
+    error: str | None
+    created_at: datetime
+    started_at: datetime | None
+    completed_at: datetime | None

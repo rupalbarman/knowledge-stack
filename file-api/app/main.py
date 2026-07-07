@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from app import db
 from app.migrate import run_migrations
 from app.queue import queue
-from app.routers import auth, files, folders, users
+from app.routers import auth, files, folders, tasks, users
 from app.storage import ensure_bucket
 
 
@@ -25,6 +25,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(folders.router)
 app.include_router(files.router)
+app.include_router(tasks.router)
 
 
 @app.get("/health")
