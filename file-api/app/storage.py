@@ -41,3 +41,13 @@ async def delete_object(key: str) -> None:
     async with s3_client() as client:
         # S3-compatible delete is idempotent - deleting a missing key is not an error.
         await client.delete_object(Bucket=settings.rustfs_bucket_name, Key=key)
+
+
+async def generate_presigned_url(key: str, expires_in: int = 300) -> str:
+    # todo(Rupal): need public facing URL to sign the request against - ideally a frontend URL
+    async with s3_client() as client:
+        return await client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": settings.rustfs_bucket_name, "Key": key},
+            ExpiresIn=expires_in,
+        )
