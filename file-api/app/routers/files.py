@@ -5,12 +5,12 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 
 from app.db import get_pool
 from app.dependencies import get_current_project
-from app.models import FileOut, TaskOut
+from app.models import FileOut, PresignedUrlOut, TaskOut
 from app.queue import queue
 from app.repositories import files as files_repo
 from app.repositories import folders as folders_repo
 from app.repositories import tasks as tasks_repo
-from app.storage import delete_object, upload_bytes
+from app.storage import delete_object, generate_presigned_download_url, upload_bytes_stream
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -35,6 +35,22 @@ async def get_file(file_id: UUID, project=Depends(get_current_project)) -> FileO
             status_code=status.HTTP_404_NOT_FOUND, detail="file not found"
         )
     return FileOut(**dict(file))
+
+
+@router.get("/{file_id}/download-url", response_model=PresignedUrlOut)
+async def get_file_download_url(
+    file_id: UUID, project=Depends(get_current_project)
+) -> PresignedUrlOut:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        file = await files_repo.get_by_id_in_project(conn, file_id, project["id"])
+    if file is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="file not found"
+        )
+
+    url, expires_in = await generate_presigned_download_url(file["storage_key"])
+    return PresignedUrlOut(url=url, expires_in=expires_in)
 
 
 @router.post("/{file_id}/sync", response_model=TaskOut)
@@ -121,13 +137,11 @@ async def create_file(
                     detail="folder_id does not belong to your project",
                 )
 
-        # todo(Rupal): change to allow batch upload instead of loading in memory
-        contents = await file.read()
         file_id = uuid4()
         storage_key = f"{project['id']}/{file_id}"
 
         # todo(Rupal): Notice how s3 upload is done before the file creation - possible orphaned object, handle it
-        await upload_bytes(storage_key, contents, file.content_type)
+        size_bytes = await upload_bytes_stream(storage_key, file, file.content_type)
 
         async with conn.transaction():
             try:
@@ -138,7 +152,7 @@ async def create_file(
                     folder_id=parsed_folder_id,
                     name=file.filename or f"File_{file_id}",
                     content_type=file.content_type,
-                    size_bytes=len(contents),
+                    size_bytes=size_bytes,
                     storage_key=storage_key,
                 )
             except asyncpg.UniqueViolationError:

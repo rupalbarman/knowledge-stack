@@ -66,6 +66,11 @@ class FileOut(BaseModel):
     created_at: datetime
 
 
+class PresignedUrlOut(BaseModel):
+    url: str
+    expires_in: int
+
+
 class TaskOut(BaseModel):
     id: UUID
     project_id: UUID
