@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     rustfs_access_key: str = "minioadmin"
     rustfs_secret_key: str = "minioadmin"
     rustfs_bucket_name: str = "content-bucket"
+    rustfs_region: str = "us-east-1"
 
     chunk_size: int = 1000
     chunk_overlap: int = 200

@@ -18,12 +18,17 @@ class Settings(BaseSettings):
     rustfs_access_key: str = "minioadmin"
     rustfs_secret_key: str = "minioadmin"
     rustfs_bucket_name: str = "content-bucket"
+    rustfs_region: str = "us-east-1"
 
-    # Caps how many delete_file_vectors_batch task_ids go in one queue
-    # message, so a folder with many files doesn't flood the queue with one
-    # message per file, and each worker job doesn't hammer the DB with one
-    # row-set per file either.
+    # Used only to sign presigned URLs for downloads
+    storage_public_url: str = "http://localhost:9000"
+    download_url_expiry_hours: int = 1
+
+    # Max number of file vectors to be deleted
     delete_batch_size: int = 100
+
+    # Size of each part in a multipart upload to RustFS / S3
+    upload_chunk_size: int = 8 * 1024 * 1024
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,
