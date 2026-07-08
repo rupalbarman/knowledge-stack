@@ -54,8 +54,10 @@ class FileOut(BaseModel):
 class TaskOut(BaseModel):
     id: UUID
     project_id: UUID
-    file_id: UUID
+    file_ref: UUID
+    file_name: str
     type: str
+    reason: str
     status: str
     error: str | None
     created_at: datetime
