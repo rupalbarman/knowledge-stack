@@ -3,12 +3,16 @@ from uuid import UUID, uuid4
 import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.config import settings
 from app.db import get_pool
 from app.dependencies import get_current_project
 from app.models import FolderCreateRequest, FolderOut
+from app.queue import queue
 from app.repositories import files as files_repo
 from app.repositories import folders as folders_repo
+from app.repositories import tasks as tasks_repo
 from app.storage import delete_object
+from app.utils import chunked
 
 router = APIRouter(prefix="/folders", tags=["folders"])
 
@@ -57,13 +61,28 @@ async def delete_folder(folder_id: UUID, project=Depends(get_current_project)) -
         descendant_ids = await folders_repo.list_descendant_ids(
             conn, folder_id, project["id"]
         )
-        storage_keys = await files_repo.list_storage_keys_in_folders(
-            conn, project["id"], descendant_ids
-        )
-        for key in storage_keys:
-            await delete_object(key)
+        files = await files_repo.list_in_folders(conn, project["id"], descendant_ids)
+        for file in files:
+            await delete_object(file["storage_key"])
 
-        await folders_repo.delete(conn, folder_id, project["id"])
+        task_ids: list[UUID] = []
+        async with conn.transaction():
+            if files:
+                tasks = await tasks_repo.create_batch(
+                    conn,
+                    project["id"],
+                    [(uuid4(), file["id"], file["name"]) for file in files],
+                    task_type="delete_vectors",
+                    reason="delete",
+                )
+                task_ids = [t["id"] for t in tasks]
+
+            await folders_repo.delete(conn, folder_id, project["id"])
+
+    for batch in chunked(task_ids, settings.delete_batch_size):
+        await queue.enqueue(
+            "delete_file_vectors_batch", task_ids=[str(t) for t in batch]
+        )
 
 
 @router.post("", response_model=FolderOut, status_code=status.HTTP_201_CREATED)

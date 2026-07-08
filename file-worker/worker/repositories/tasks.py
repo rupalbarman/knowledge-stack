@@ -24,11 +24,11 @@ async def get_with_file(conn: DBConnection, task_id: UUID) -> asyncpg.Record | N
     )
 
 
-async def get_by_id(conn: DBConnection, task_id: UUID) -> asyncpg.Record | None:
-    # No join to files - file_ref/file_name on tasks are denormalized
-    # snapshots that outlive the file itself, which is exactly what the
-    # delete path needs (the file row is already gone by the time this runs).
-    return await conn.fetchrow("SELECT * FROM tasks WHERE id = $1", task_id)
+async def get_by_ids(conn: DBConnection, task_ids: list[UUID]) -> list[asyncpg.Record]:
+    # tasks would have reference to the file (even if it is deleted)
+    return await conn.fetch(
+        "SELECT * FROM tasks WHERE id = ANY($1::uuid[])", task_ids
+    )
 
 
 async def mark_processing(conn: DBConnection, task_id: UUID) -> None:
@@ -38,10 +38,24 @@ async def mark_processing(conn: DBConnection, task_id: UUID) -> None:
     )
 
 
+async def mark_processing_batch(conn: DBConnection, task_ids: list[UUID]) -> None:
+    await conn.execute(
+        "UPDATE tasks SET status = 'processing', started_at = now() WHERE id = ANY($1::uuid[])",
+        task_ids,
+    )
+
+
 async def mark_completed(conn: DBConnection, task_id: UUID) -> None:
     await conn.execute(
         "UPDATE tasks SET status = 'completed', completed_at = now() WHERE id = $1",
         task_id,
+    )
+
+
+async def mark_completed_batch(conn: DBConnection, task_ids: list[UUID]) -> None:
+    await conn.execute(
+        "UPDATE tasks SET status = 'completed', completed_at = now() WHERE id = ANY($1::uuid[])",
+        task_ids,
     )
 
 
