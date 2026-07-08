@@ -29,15 +29,17 @@ async def list_by_folder(
     )
 
 
-async def list_storage_keys_in_folders(
+async def list_in_folders(
     conn: DBConnection, project_id: UUID, folder_ids: list[UUID]
-) -> list[str]:
-    rows = await conn.fetch(
-        "SELECT storage_key FROM files WHERE project_id = $1 AND folder_id = ANY($2::uuid[])",
+) -> list[asyncpg.Record]:
+    return await conn.fetch(
+        """
+        SELECT id, name, storage_key FROM files
+        WHERE project_id = $1 AND folder_id = ANY($2::uuid[])
+        """,
         project_id,
         folder_ids,
     )
-    return [r["storage_key"] for r in rows]
 
 
 async def set_latest_task(conn: DBConnection, file_id: UUID, task_id: UUID) -> None:

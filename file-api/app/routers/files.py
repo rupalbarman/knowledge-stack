@@ -90,7 +90,7 @@ async def delete_file(file_id: UUID, project=Depends(get_current_project)) -> No
             )
             await files_repo.delete(conn, file_id, project["id"])
 
-    await queue.enqueue("delete_file_vectors", task_id=str(task_id))
+    await queue.enqueue("delete_file_vectors_batch", task_ids=[str(task_id)])
 
 
 @router.post("", response_model=FileOut, status_code=status.HTTP_201_CREATED)

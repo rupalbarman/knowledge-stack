@@ -89,44 +89,30 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
     return {"task_id": task_id, "status": "completed", "chunks": len(chunks)}
 
 
-async def delete_file_vectors(ctx: dict, *, task_id: str) -> dict:
-    task_uuid = UUID(task_id)
+async def delete_file_vectors_batch(ctx: dict, *, task_ids: list[str]) -> dict:
+    task_uuids = [UUID(t) for t in task_ids]
     pool = db.get_pool()
 
     async with pool.acquire() as conn:
-        task = await tasks_repo.get_by_id(conn, task_uuid)
-        if task is None:
-            logger.warning("delete task %s not found, skipping", task_id)
-            return {"task_id": task_id, "status": "missing"}
+        tasks = await tasks_repo.get_by_ids(conn, task_uuids)
+        if not tasks:
+            logger.warning("delete batch %s: no matching tasks, skipping", task_ids)
+            return {"task_ids": task_ids, "status": "missing"}
 
-        await tasks_repo.mark_processing(conn, task_uuid)
+        await tasks_repo.mark_processing_batch(conn, task_uuids)
 
-    # The files row is already gone by the time this runs (file-api enqueues
-    # after deleting it) - file_ref/file_name/project_id come straight off
-    # the task's own denormalized snapshot, no join needed.
-    # TODO: delete matching rows from Milvus via ctx["milvus"] once the
-    # embed/upsert side exists, e.g.
-    #   await ctx["milvus"].delete(
-    #       collection_name=..., filter=f'file_id == "{task["file_ref"]}"'
-    #   )
-    logger.info(
-        "delete_file_vectors: file %s (%s) for project %s",
-        task["file_ref"],
-        task["file_name"],
-        task["project_id"],
-    )
+        # delete associated file vector code goes here
+        logger.info("delete_file_vectors_batch: %d file(s)", len(tasks))
 
-    async with pool.acquire() as conn:
-        await tasks_repo.mark_completed(conn, task_uuid)
+        await tasks_repo.mark_completed_batch(conn, task_uuids)
 
-    return {"task_id": task_id, "status": "completed"}
+    return {"task_ids": task_ids, "status": "completed", "count": len(tasks)}
 
 
-# Referenced by the Dockerfile CMD as `worker.main.settings` - saq's CLI
-# looks up this exact name to configure the worker process.
+# Check if the configuration below needs reading from env
 settings = {
     "queue": queue,
-    "functions": [process_file, delete_file_vectors],
+    "functions": [process_file, delete_file_vectors_batch],
     "concurrency": 10,
     "startup": startup,
     "shutdown": shutdown,

@@ -3,12 +3,21 @@ from uuid import UUID, uuid4
 import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.config import settings
 from app.db import get_pool
 from app.dependencies import get_current_project
-from app.models import FolderCreateRequest, FolderOut
+from app.models import (
+    FolderBreadcrumbItem,
+    FolderCreateRequest,
+    FolderOut,
+    FolderTreeNode,
+)
+from app.queue import queue
 from app.repositories import files as files_repo
 from app.repositories import folders as folders_repo
+from app.repositories import tasks as tasks_repo
 from app.storage import delete_object
+from app.utils import chunked
 
 router = APIRouter(prefix="/folders", tags=["folders"])
 
@@ -21,6 +30,35 @@ async def list_folders(
     async with pool.acquire() as conn:
         rows = await folders_repo.list_by_parent(conn, project["id"], parent_id)
     return [FolderOut(**dict(row)) for row in rows]
+
+
+@router.get("/tree", response_model=list[FolderTreeNode])
+async def get_folder_tree(project=Depends(get_current_project)) -> list[FolderTreeNode]:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        rows = await folders_repo.list_all(conn, project["id"])
+
+    nodes = {row["id"]: FolderTreeNode(id=row["id"], name=row["name"]) for row in rows}
+    roots: list[FolderTreeNode] = []
+    for row in rows:
+        node = nodes[row["id"]]
+        parent = nodes.get(row["parent_id"]) if row["parent_id"] is not None else None
+        (parent.children if parent is not None else roots).append(node)
+    return roots
+
+
+@router.get("/{folder_id}/breadcrumb", response_model=list[FolderBreadcrumbItem])
+async def get_folder_breadcrumb(
+    folder_id: UUID, project=Depends(get_current_project)
+) -> list[FolderBreadcrumbItem]:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        rows = await folders_repo.list_ancestors(conn, folder_id, project["id"])
+    if not rows:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="folder not found"
+        )
+    return [FolderBreadcrumbItem(**dict(row)) for row in rows]
 
 
 @router.get("/{folder_id}", response_model=FolderOut)
@@ -57,13 +95,28 @@ async def delete_folder(folder_id: UUID, project=Depends(get_current_project)) -
         descendant_ids = await folders_repo.list_descendant_ids(
             conn, folder_id, project["id"]
         )
-        storage_keys = await files_repo.list_storage_keys_in_folders(
-            conn, project["id"], descendant_ids
-        )
-        for key in storage_keys:
-            await delete_object(key)
+        files = await files_repo.list_in_folders(conn, project["id"], descendant_ids)
+        for file in files:
+            await delete_object(file["storage_key"])
 
-        await folders_repo.delete(conn, folder_id, project["id"])
+        task_ids: list[UUID] = []
+        async with conn.transaction():
+            if files:
+                tasks = await tasks_repo.create_batch(
+                    conn,
+                    project["id"],
+                    [(uuid4(), file["id"], file["name"]) for file in files],
+                    task_type="delete_vectors",
+                    reason="delete",
+                )
+                task_ids = [t["id"] for t in tasks]
+
+            await folders_repo.delete(conn, folder_id, project["id"])
+
+    for batch in chunked(task_ids, settings.delete_batch_size):
+        await queue.enqueue(
+            "delete_file_vectors_batch", task_ids=[str(t) for t in batch]
+        )
 
 
 @router.post("", response_model=FolderOut, status_code=status.HTTP_201_CREATED)
