@@ -6,7 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.config import settings
 from app.db import get_pool
 from app.dependencies import get_current_project
-from app.models import FolderCreateRequest, FolderOut
+from app.models import (
+    FolderBreadcrumbItem,
+    FolderCreateRequest,
+    FolderOut,
+    FolderTreeNode,
+)
 from app.queue import queue
 from app.repositories import files as files_repo
 from app.repositories import folders as folders_repo
@@ -25,6 +30,35 @@ async def list_folders(
     async with pool.acquire() as conn:
         rows = await folders_repo.list_by_parent(conn, project["id"], parent_id)
     return [FolderOut(**dict(row)) for row in rows]
+
+
+@router.get("/tree", response_model=list[FolderTreeNode])
+async def get_folder_tree(project=Depends(get_current_project)) -> list[FolderTreeNode]:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        rows = await folders_repo.list_all(conn, project["id"])
+
+    nodes = {row["id"]: FolderTreeNode(id=row["id"], name=row["name"]) for row in rows}
+    roots: list[FolderTreeNode] = []
+    for row in rows:
+        node = nodes[row["id"]]
+        parent = nodes.get(row["parent_id"]) if row["parent_id"] is not None else None
+        (parent.children if parent is not None else roots).append(node)
+    return roots
+
+
+@router.get("/{folder_id}/breadcrumb", response_model=list[FolderBreadcrumbItem])
+async def get_folder_breadcrumb(
+    folder_id: UUID, project=Depends(get_current_project)
+) -> list[FolderBreadcrumbItem]:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        rows = await folders_repo.list_ancestors(conn, folder_id, project["id"])
+    if not rows:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="folder not found"
+        )
+    return [FolderBreadcrumbItem(**dict(row)) for row in rows]
 
 
 @router.get("/{folder_id}", response_model=FolderOut)

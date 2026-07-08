@@ -48,6 +48,35 @@ async def list_descendant_ids(
     return [r["id"] for r in rows]
 
 
+async def list_ancestors(
+    conn: DBConnection, folder_id: UUID, project_id: UUID
+) -> list[asyncpg.Record]:
+    # Walks parent_id upward from folder_id to the root, depth-first so we
+    # know how to order root-first for breadcrumb display.
+    return await conn.fetch(
+        """
+        WITH RECURSIVE ancestors AS (
+            SELECT id, parent_id, name, 0 AS depth
+            FROM folders WHERE id = $1 AND project_id = $2
+            UNION ALL
+            SELECT f.id, f.parent_id, f.name, a.depth + 1
+            FROM folders f
+            JOIN ancestors a ON f.id = a.parent_id
+        )
+        SELECT id, name FROM ancestors ORDER BY depth DESC
+        """,
+        folder_id,
+        project_id,
+    )
+
+
+async def list_all(conn: DBConnection, project_id: UUID) -> list[asyncpg.Record]:
+    return await conn.fetch(
+        "SELECT id, parent_id, name FROM folders WHERE project_id = $1 ORDER BY name",
+        project_id,
+    )
+
+
 async def delete(conn: DBConnection, folder_id: UUID, project_id: UUID) -> None:
     # Cascades to sub-folders and their files' metadata via FK ON DELETE CASCADE.
     # Callers must delete the underlying storage objects first (see routers/folders.py).

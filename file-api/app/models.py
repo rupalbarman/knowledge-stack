@@ -40,6 +40,21 @@ class FolderOut(BaseModel):
     created_at: datetime
 
 
+class FolderBreadcrumbItem(BaseModel):
+    id: UUID
+    name: str
+
+
+class FolderTreeNode(BaseModel):
+    id: UUID
+    name: str
+    children: list["FolderTreeNode"] = []
+
+
+# needed for recursive pydantic model
+FolderTreeNode.model_rebuild()
+
+
 class FileOut(BaseModel):
     id: UUID
     project_id: UUID
