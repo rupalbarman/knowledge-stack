@@ -42,6 +42,18 @@ async def list_in_folders(
     )
 
 
+async def list_by_ids(
+    conn: DBConnection, project_id: UUID, file_ids: list[UUID]
+) -> list[asyncpg.Record]:
+    if not file_ids:
+        return []
+    return await conn.fetch(
+        "SELECT * FROM files WHERE project_id = $1 AND id = ANY($2::uuid[])",
+        project_id,
+        file_ids,
+    )
+
+
 async def set_latest_task(conn: DBConnection, file_id: UUID, task_id: UUID) -> None:
     await conn.execute(
         "UPDATE files SET latest_task_id = $1 WHERE id = $2", task_id, file_id

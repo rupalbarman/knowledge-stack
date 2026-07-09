@@ -10,3 +10,4 @@ pydantic>=2.13.4
 pydantic-settings>=2.14.2
 aioboto3>=13.2
 python-multipart>=0.0.12
+pymilvus>=2.5

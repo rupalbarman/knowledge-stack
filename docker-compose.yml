@@ -142,6 +142,7 @@ services:
       RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-minioadmin}
       RUSTFS_BUCKET_NAME: ${APP_BUCKET_NAME:-content-bucket}
       STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://localhost:9000}
+      MILVUS_URI: http://milvus:19530
     ports:
       - "8000:8000"
     volumes:
@@ -152,6 +153,8 @@ services:
       postgres:
         condition: service_healthy
       rustfs:
+        condition: service_healthy
+      milvus:
         condition: service_healthy
 
   file-worker:

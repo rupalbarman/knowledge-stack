@@ -30,6 +30,18 @@ class Settings(BaseSettings):
     # Size of each part in a multipart upload to RustFS / S3
     upload_chunk_size: int = 8 * 1024 * 1024
 
+    milvus_uri: str = "http://localhost:19530"
+
+    embeddings_url: str = ""
+    embeddings_api_key: str = ""
+    embeddings_model: str = ""
+
+    # Must match file-worker's setting
+    root_folder_partition_key: str = "__root__"
+
+    search_default_top_k: int = 10
+    search_max_top_k: int = 50
+
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,
         env_file_encoding="utf-8",

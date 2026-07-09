@@ -71,6 +71,29 @@ class PresignedUrlOut(BaseModel):
     expires_in: int
 
 
+class SearchOptions(BaseModel):
+    top_k: int | None = None
+    min_score: float | None = None
+
+
+class SearchRequest(BaseModel):
+    query: str
+    folder_id: UUID | None = None
+    options: SearchOptions | None = None
+
+
+class SearchHit(BaseModel):
+    file_id: UUID
+    file_name: str
+    chunk_index: int
+    text: str
+    score: float
+
+
+class SearchResponse(BaseModel):
+    hits: list[SearchHit]
+
+
 class TaskOut(BaseModel):
     id: UUID
     project_id: UUID
