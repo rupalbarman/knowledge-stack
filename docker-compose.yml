@@ -116,7 +116,7 @@ services:
       retries: 3
 
   attu:
-    image: zilliz/attu:v2.5.0
+    image: zilliz/attu:v2.6.5
     networks: [knowledge-stack]
     environment:
       MILVUS_URL: milvus:19530

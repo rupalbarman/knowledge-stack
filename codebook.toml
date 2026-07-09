@@ -6,4 +6,5 @@ words = [
     "milvus",
     "presigned",
     "pydantic",
+    "upserted",
 ]
