@@ -1,4 +1,5 @@
 words = [
+    "AUTOINDEX",
     "ETCD",
     "MINIO",
     "RUSTFS",

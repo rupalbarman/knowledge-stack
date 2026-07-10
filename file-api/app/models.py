@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -72,6 +73,7 @@ class PresignedUrlOut(BaseModel):
 
 
 class SearchOptions(BaseModel):
+    mode: Literal["dense", "sparse"] = "dense"
     top_k: int | None = None
     min_score: float | None = None
 

@@ -53,12 +53,16 @@ async def search(
         else settings.root_folder_partition_key
     )
 
-    vectors = await embed([payload.query])
-    query_vector = vectors[0]
+    if options.mode == "dense":
+        vectors = await embed([payload.query])
+        query_data = [vectors[0]]
+    else:
+        query_data = [payload.query]
 
     results = await milvus.search(
         collection_name=collection_name,
-        data=[query_vector],
+        data=query_data,
+        anns_field=options.mode,
         filter=f'folder_id == "{folder_id}"',
         limit=top_k,
         output_fields=["file_id", "chunk_index", "text"],
@@ -66,7 +70,8 @@ async def search(
     raw_hits = results[0] if results else []
 
     if min_score is not None:
-        # cosine similarity, higher the better
+        # Higher the better. COSINE searches span from -1 to 1
+        # while sparse searches are positive unbounded above 0
         raw_hits = [hit for hit in raw_hits if hit["distance"] >= min_score]
 
     if not raw_hits:
