@@ -4,10 +4,12 @@ from uuid import UUID
 
 from saq import Queue
 
-from worker import chunking, db, milvus_client, storage
+from worker import chunking, db, embeddings, milvus_client, storage
 from worker.config import settings as app_settings
 from worker.extractors import ExtractionError, UnsupportedFileTypeError, get_extractor
+from worker.milvus_client import TEXT_MAX_LENGTH
 from worker.repositories import tasks as tasks_repo
+from worker.utils import chunked
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +67,6 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
         raise
 
     chunks = await asyncio.to_thread(chunking.chunk_text, text)
-
-    # TODO: embed chunks and upsert into Milvus via ctx["milvus"].
     logger.info(
         "extracted %d chunk(s) from %s (file %s)",
         len(chunks),
@@ -74,16 +74,60 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
         row["file_ref"],
     )
 
-    async with pool.acquire() as conn:
-        # Re-check right before the "commit" point: a newer task may have
-        # been created while this one was mid-flight.
-        current = await tasks_repo.get_with_file(conn, task_uuid)
-        if current is None or current["latest_task_id"] != task_uuid:
-            await tasks_repo.mark_superseded(conn, task_uuid)
-            return {"task_id": task_id, "status": "superseded"}
+    oversized = [i for i, chunk in enumerate(chunks) if len(chunk) > TEXT_MAX_LENGTH]
+    if oversized:
+        # Not retryable since a chunk that's too long will be too long on every
+        # retry too.
+        error = (
+            f"chunk(s) {oversized} exceed the {TEXT_MAX_LENGTH}-character "
+            "Milvus text field limit"
+        )
+        async with pool.acquire() as conn:
+            await tasks_repo.mark_failed(conn, task_uuid, error)
+        return {"task_id": task_id, "status": "failed", "error": error}
 
-        # Placeholder completion until the embed/upsert steps exist - marks
-        # that extraction and chunking succeeded end to end.
+    try:
+        # Ensure collection and schema exists to insert rows into
+        collection_name = await milvus_client.ensure_collection(row["project_id"])
+
+        # todo(Rupal): Check if embeddings can handle unbounded chunks, try to batch it
+        vectors = await embeddings.embed(chunks)
+
+        folder_id = (
+            str(row["folder_id"])
+            if row["folder_id"] is not None
+            else app_settings.root_folder_partition_key
+        )
+        file_id = str(row["file_ref"])
+
+        milvus_rows = [
+            {
+                "id": f"{file_id}:{i}",
+                "folder_id": folder_id,
+                "file_id": file_id,
+                "chunk_index": i,
+                "text": chunk,
+                "dense": vector,
+            }
+            for i, (chunk, vector) in enumerate(zip(chunks, vectors))
+        ]
+
+        async with pool.acquire() as conn:
+            # Re-check right before the actual write. If a newer constructive task exists then
+            # write the newer one and ignore this task by marking it superseded.
+            current = await tasks_repo.get_with_file(conn, task_uuid)
+            if current is None or current["latest_task_id"] != task_uuid:
+                await tasks_repo.mark_superseded(conn, task_uuid)
+                return {"task_id": task_id, "status": "superseded"}
+
+        for batch in chunked(milvus_rows, app_settings.milvus_upsert_batch_size):
+            await ctx["milvus"].upsert(collection_name=collection_name, data=batch)
+    except Exception as exc:
+        async with pool.acquire() as conn:
+            await tasks_repo.mark_failed(conn, task_uuid, str(exc))
+        raise
+
+    async with pool.acquire() as conn:
         await tasks_repo.mark_completed(conn, task_uuid)
 
     return {"task_id": task_id, "status": "completed", "chunks": len(chunks)}

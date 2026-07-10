@@ -15,6 +15,7 @@ async def get_with_file(conn: DBConnection, task_id: UUID) -> asyncpg.Record | N
             t.project_id,
             f.name,
             f.storage_key,
+            f.folder_id,
             f.latest_task_id
         FROM tasks t
         JOIN files f ON f.id = t.file_ref

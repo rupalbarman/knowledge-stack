@@ -22,6 +22,18 @@ class Settings(BaseSettings):
     chunk_size: int = 1000
     chunk_overlap: int = 200
 
+    embedding_dimension: int = 1024
+    # partition key for milvus collection, used to separate folders.
+    # __root__ refers to files under project (without folders)
+    root_folder_partition_key: str = "__root__"
+
+    embeddings_url: str = ""
+    embeddings_api_key: str = ""
+    embeddings_model: str = ""
+
+    # controls how many rows / chunks are upserted to milvus in one go
+    milvus_upsert_batch_size: int = 200
+
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,
         env_file_encoding="utf-8",

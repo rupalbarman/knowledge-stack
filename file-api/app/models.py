@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -69,6 +70,30 @@ class FileOut(BaseModel):
 class PresignedUrlOut(BaseModel):
     url: str
     expires_in: int
+
+
+class SearchOptions(BaseModel):
+    mode: Literal["dense", "sparse"] = "dense"
+    top_k: int | None = None
+    min_score: float | None = None
+
+
+class SearchRequest(BaseModel):
+    query: str
+    folder_id: UUID | None = None
+    options: SearchOptions | None = None
+
+
+class SearchHit(BaseModel):
+    file_id: UUID
+    file_name: str
+    chunk_index: int
+    text: str
+    score: float
+
+
+class SearchResponse(BaseModel):
+    hits: list[SearchHit]
 
 
 class TaskOut(BaseModel):

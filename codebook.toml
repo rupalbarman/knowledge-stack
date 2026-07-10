@@ -1,4 +1,5 @@
 words = [
+    "AUTOINDEX",
     "ETCD",
     "MINIO",
     "RUSTFS",
@@ -6,4 +7,5 @@ words = [
     "milvus",
     "presigned",
     "pydantic",
+    "upserted",
 ]
