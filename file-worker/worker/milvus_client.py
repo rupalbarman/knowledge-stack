@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pymilvus import AsyncMilvusClient, DataType
+from pymilvus import AsyncMilvusClient, DataType, Function, FunctionType
 
 from worker.config import settings
 
@@ -57,18 +57,42 @@ async def ensure_collection(project_id: UUID) -> str:
     )
     schema.add_field(field_name="file_id", datatype=DataType.VARCHAR, max_length=64)
     schema.add_field(field_name="chunk_index", datatype=DataType.INT16)
+
+    analyzer_params = {"tokenizer": "icu", "filter": ["removepunct"]}
     schema.add_field(
-        field_name="text", datatype=DataType.VARCHAR, max_length=TEXT_MAX_LENGTH
+        field_name="text",
+        datatype=DataType.VARCHAR,
+        max_length=TEXT_MAX_LENGTH,
+        enable_analyzer=True,
+        analyzer_params=analyzer_params,
+        enable_match=True,
     )
+    # dense vector field (for semantic searches)
     schema.add_field(
-        field_name="embedding",
+        field_name="dense",
         datatype=DataType.FLOAT_VECTOR,
         dim=settings.embedding_dimension,
     )
+    # sparse vector field (for BM25 keyword searches)
+    schema.add_field(
+        field_name="sparse",
+        datatype=DataType.SPARSE_FLOAT_VECTOR,
+    )
+
+    bm25_function = Function(
+        name="text_to_vector",
+        function_type=FunctionType.BM25,
+        input_field_names=["text"],
+        output_field_names=["sparse"],
+    )
+    schema.add_function(bm25_function)
 
     index_params = milvus.prepare_index_params()
     index_params.add_index(
-        field_name="embedding", index_type="AUTOINDEX", metric_type="COSINE"
+        field_name="dense", index_type="AUTOINDEX", metric_type="COSINE"
+    )
+    index_params.add_index(
+        field_name="sparse", index_type="AUTOINDEX", metric_type="BM25"
     )
 
     await milvus.create_collection(

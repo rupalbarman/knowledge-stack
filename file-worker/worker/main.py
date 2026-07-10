@@ -109,7 +109,7 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
                 "file_id": file_id,
                 "chunk_index": i,
                 "text": chunk,
-                "embedding": vector,
+                "dense": vector,
             }
             for i, (chunk, vector) in enumerate(zip(chunks, vectors))
         ]
