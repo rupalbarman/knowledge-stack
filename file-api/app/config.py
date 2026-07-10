@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     embeddings_api_key: str = ""
     embeddings_model: str = ""
 
+    reranker_enabled: bool = True
+    reranker_model: str = ""
+    reranker_url: str = ""
+    reranker_api_key: str = ""
+
     # Must match file-worker's setting
     root_folder_partition_key: str = "__root__"
 

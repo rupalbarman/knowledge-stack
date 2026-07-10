@@ -7,5 +7,7 @@ words = [
     "milvus",
     "presigned",
     "pydantic",
+    "rerank",
+    "reranker",
     "upserted",
 ]
