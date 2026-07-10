@@ -76,9 +76,8 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
 
     oversized = [i for i, chunk in enumerate(chunks) if len(chunk) > TEXT_MAX_LENGTH]
     if oversized:
-        # Not retryable - a chunk that's too long will be too long on every
-        # retry too. This should never happen at chunk_size=1000, but
-        # chunking behavior may differ once other formats land.
+        # Not retryable since a chunk that's too long will be too long on every
+        # retry too.
         error = (
             f"chunk(s) {oversized} exceed the {TEXT_MAX_LENGTH}-character "
             "Milvus text field limit"
@@ -87,11 +86,10 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
             await tasks_repo.mark_failed(conn, task_uuid, error)
         return {"task_id": task_id, "status": "failed", "error": error}
 
-    # Bootstrap this project's collection so it's ready to receive rows -
-    # safe to call every run, no-op once it already exists.
-    collection_name = await milvus_client.ensure_collection(row["project_id"])
-
     try:
+        # Ensure collection and schema exists to insert rows into
+        collection_name = await milvus_client.ensure_collection(row["project_id"])
+
         # todo(Rupal): Check if embeddings can handle unbounded chunks, try to batch it
         vectors = await embeddings.embed(chunks)
 
@@ -115,11 +113,8 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
         ]
 
         async with pool.acquire() as conn:
-            # Re-check right before the actual write, not after: a newer
-            # task may have been created while embedding was in flight.
-            # This is the checkpoint that actually prevents a stale task
-            # from clobbering a newer one's output - checking post-write
-            # would be too late to matter.
+            # Re-check right before the actual write. If a newer constructive task exists then
+            # write the newer one and ignore this task by marking it superseded.
             current = await tasks_repo.get_with_file(conn, task_uuid)
             if current is None or current["latest_task_id"] != task_uuid:
                 await tasks_repo.mark_superseded(conn, task_uuid)
