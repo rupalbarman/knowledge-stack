@@ -73,7 +73,7 @@ class PresignedUrlOut(BaseModel):
 
 
 class SearchOptions(BaseModel):
-    mode: Literal["dense", "sparse"] = "dense"
+    mode: Literal["dense", "sparse", "hybrid"] = "dense"
     top_k: int | None = None
     min_score: float | None = None
 
@@ -94,6 +94,11 @@ class SearchHit(BaseModel):
 
 class SearchResponse(BaseModel):
     hits: list[SearchHit]
+
+
+class RerankerItem(BaseModel):
+    score: float
+    index: int
 
 
 class TaskOut(BaseModel):
