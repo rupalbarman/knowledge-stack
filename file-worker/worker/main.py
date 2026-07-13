@@ -53,7 +53,7 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
 
     try:
         extractor = get_extractor(row["name"])
-        text = await asyncio.to_thread(extractor, contents)
+        text = await extractor(contents)
         print(text)
     except (UnsupportedFileTypeError, ExtractionError) as exc:
         # Not retryable - the file's type/content won't change on its own,

@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     embeddings_api_key: str = ""
     embeddings_model: str = ""
 
+    ocr_url: str = ""
+    ocr_api_key: str = ""
+    ocr_model: str = ""
+
     # controls how many rows / chunks are upserted to milvus in one go
     milvus_upsert_batch_size: int = 200
 

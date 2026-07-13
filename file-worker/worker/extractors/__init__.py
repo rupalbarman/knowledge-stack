@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from worker.extractors import text
+from worker.extractors import pdf, text
 from worker.extractors.base import Extractor, ExtractionError, UnsupportedFileTypeError
 
 # Keyed by extension rather than the upload's reported content_type - that
@@ -9,6 +9,7 @@ from worker.extractors.base import Extractor, ExtractionError, UnsupportedFileTy
 # behind their own extractors/<format>.py.
 _BY_EXTENSION: dict[str, Extractor] = {
     ".txt": text.extract,
+    ".pdf": pdf.extract,
 }
 
 
