@@ -26,6 +26,8 @@ class Settings(BaseSettings):
 
     # Max number of file vectors to be deleted
     delete_batch_size: int = 100
+    # Timeout for process_file job
+    process_file_job_timeout_sec: int = 600
 
     # Size of each part in a multipart upload to RustFS / S3
     upload_chunk_size: int = 8 * 1024 * 1024
