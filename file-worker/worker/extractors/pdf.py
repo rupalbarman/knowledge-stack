@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 import pymupdf
+import pymupdf4llm
 
 from worker.config import settings
 from worker.extractors.base import ExtractionError
@@ -14,11 +15,15 @@ _MIN_TEXT_LENGTH = 20
 
 
 def _extract_sync(data: bytes) -> str:
-    texts = []
     with pymupdf.open(stream=data, filetype="pdf") as doc:
-        for page in doc:
-            texts.append(page.get_text())
-        return "\n\n".join(texts)
+        text = pymupdf4llm.to_markdown(
+            doc,
+            use_ocr=False,
+            embed_images=False,
+            write_images=False,
+            ignore_images=True,
+        )
+        return f"{text}"
 
 
 async def extract(data: bytes) -> str:

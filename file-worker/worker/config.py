@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     # controls how many rows / chunks are upserted to milvus in one go
     milvus_upsert_batch_size: int = 200
 
+    # debug-only: writes every extracted document's text to disk. Off by
+    # default since it dumps tenant content to a local, unscoped directory.
+    save_extracted_text: bool = False
+
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,
         env_file_encoding="utf-8",
