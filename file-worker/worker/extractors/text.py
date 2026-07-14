@@ -1,7 +1,7 @@
 from worker.extractors.base import ExtractionError
 
 
-def extract(data: bytes) -> str:
+async def extract(data: bytes) -> str:
     try:
         return data.decode("utf-8")
     except UnicodeDecodeError as exc:

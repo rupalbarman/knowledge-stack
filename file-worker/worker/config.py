@@ -30,9 +30,20 @@ class Settings(BaseSettings):
     embeddings_url: str = ""
     embeddings_api_key: str = ""
     embeddings_model: str = ""
+    # controls how many texts are sent to the embeddings model to avoid it from
+    # raising a 413. Does not control the length of text
+    embeddings_batch_size: int = 32
+
+    ocr_url: str = ""
+    ocr_api_key: str = ""
+    ocr_model: str = ""
 
     # controls how many rows / chunks are upserted to milvus in one go
     milvus_upsert_batch_size: int = 200
+
+    # debug-only: writes every extracted document's text to disk. Off by
+    # default since it dumps tenant content to a local, unscoped directory.
+    save_extracted_text: bool = False
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,

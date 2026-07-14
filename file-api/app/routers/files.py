@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 import asyncpg
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
+from app.config import settings
 from app.db import get_pool
 from app.dependencies import get_current_project
 from app.models import FileOut, PresignedUrlOut, TaskOut
@@ -10,7 +11,11 @@ from app.queue import queue
 from app.repositories import files as files_repo
 from app.repositories import folders as folders_repo
 from app.repositories import tasks as tasks_repo
-from app.storage import delete_object, generate_presigned_download_url, upload_bytes_stream
+from app.storage import (
+    delete_object,
+    generate_presigned_download_url,
+    upload_bytes_stream,
+)
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -76,7 +81,11 @@ async def sync_file(file_id: UUID, project=Depends(get_current_project)) -> Task
             )
             await files_repo.set_latest_task(conn, file["id"], task_id)
 
-    await queue.enqueue("process_file", task_id=str(task_id))
+    await queue.enqueue(
+        "process_file",
+        task_id=str(task_id),
+        timeout=settings.process_file_job_timeout_sec,
+    )
 
     return TaskOut(**dict(task))
 
@@ -174,6 +183,10 @@ async def create_file(
             await files_repo.set_latest_task(conn, record["id"], task_id)
 
     # todo(Rupal): Notice enqueue is outside the transaction, but any failure above will skip this call so we are good
-    await queue.enqueue("process_file", task_id=str(task_id))
+    await queue.enqueue(
+        "process_file",
+        task_id=str(task_id),
+        timeout=settings.process_file_job_timeout_sec,
+    )
 
     return FileOut(**dict(record))

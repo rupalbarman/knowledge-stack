@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from worker.extractors import text
-from worker.extractors.base import Extractor, ExtractionError, UnsupportedFileTypeError
+from worker.extractors import pdf, text
+from worker.extractors.base import ExtractionError, Extractor, UnsupportedFileTypeError
 
 # Keyed by extension rather than the upload's reported content_type - that
 # header is client-supplied and unreliable (e.g. often defaults to
@@ -9,6 +9,10 @@ from worker.extractors.base import Extractor, ExtractionError, UnsupportedFileTy
 # behind their own extractors/<format>.py.
 _BY_EXTENSION: dict[str, Extractor] = {
     ".txt": text.extract,
+    ".pdf": pdf.extract,
+    ".md": pdf.extract,
+    ".epub": pdf.extract,
+    ".mobi": pdf.extract,
 }
 
 

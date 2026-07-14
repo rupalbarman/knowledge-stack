@@ -9,7 +9,7 @@ from worker.config import settings as app_settings
 from worker.extractors import ExtractionError, UnsupportedFileTypeError, get_extractor
 from worker.milvus_client import TEXT_MAX_LENGTH
 from worker.repositories import tasks as tasks_repo
-from worker.utils import chunked
+from worker.utils import chunked, save_to_temp_dir
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +53,11 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
 
     try:
         extractor = get_extractor(row["name"])
-        text = await asyncio.to_thread(extractor, contents)
-        print(text)
+        text = await extractor(contents)
+
+        if app_settings.save_extracted_text:
+            await asyncio.to_thread(save_to_temp_dir, row["file_ref"], text)
+
     except (UnsupportedFileTypeError, ExtractionError) as exc:
         # Not retryable - the file's type/content won't change on its own,
         # so there's no point letting saq retry this job.
@@ -90,7 +93,6 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
         # Ensure collection and schema exists to insert rows into
         collection_name = await milvus_client.ensure_collection(row["project_id"])
 
-        # todo(Rupal): Check if embeddings can handle unbounded chunks, try to batch it
         vectors = await embeddings.embed(chunks)
 
         folder_id = (
