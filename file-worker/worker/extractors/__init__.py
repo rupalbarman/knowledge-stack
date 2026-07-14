@@ -12,6 +12,7 @@ _BY_EXTENSION: dict[str, Extractor] = {
     ".pdf": pdf.extract,
     ".md": pdf.extract,
     ".epub": pdf.extract,
+    ".mobi": pdf.extract,
 }
 
 
