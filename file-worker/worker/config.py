@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     embeddings_url: str = ""
     embeddings_api_key: str = ""
     embeddings_model: str = ""
+    # controls how many texts are sent to the embeddings model to avoid it from
+    # raising a 413. Does not control the length of text
+    embeddings_batch_size: int = 32
 
     ocr_url: str = ""
     ocr_api_key: str = ""

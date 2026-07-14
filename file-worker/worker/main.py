@@ -90,7 +90,6 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
         # Ensure collection and schema exists to insert rows into
         collection_name = await milvus_client.ensure_collection(row["project_id"])
 
-        # todo(Rupal): Check if embeddings can handle unbounded chunks, try to batch it
         vectors = await embeddings.embed(chunks)
 
         folder_id = (
