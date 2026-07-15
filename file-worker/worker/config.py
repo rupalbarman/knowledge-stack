@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     chunk_size: int = 1000
     chunk_overlap: int = 200
-    chunking_strategy: str = "markdown"
+    chunking_strategy: str = "markdown_text"
 
     embedding_dimension: int = 1024
     # partition key for milvus collection, used to separate folders.
@@ -44,6 +44,7 @@ class Settings(BaseSettings):
 
     # debug-only: writes every extracted document's text to disk
     save_extracted_text: bool = False
+    save_extracted_chunks: bool = False
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,

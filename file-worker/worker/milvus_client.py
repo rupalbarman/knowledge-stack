@@ -94,9 +94,22 @@ async def ensure_collection(project_id: UUID) -> str:
     index_params.add_index(
         field_name="sparse", index_type="AUTOINDEX", metric_type="BM25"
     )
+    # scalar index for speeding up filter expression file_id = xxx (used for deletion flow)
+    # this will still perform index lookup per partition
+    index_params.add_index(field_name="file_id", index_type="INVERTED")
 
     await milvus.create_collection(
         collection_name=name, schema=schema, index_params=index_params
     )
     print("milvus collection created")
     return name
+
+
+async def delete_file_chunks(collection_name: str, file_id: str) -> None:
+    milvus = get_client()
+    if not await milvus.has_collection(collection_name):
+        return
+    await milvus.delete(
+        collection_name=collection_name,
+        filter=f'file_id == "{file_id}"',
+    )

@@ -73,6 +73,12 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
     try:
         chunker = get_chunker(app_settings.chunking_strategy)
         chunks = await chunker(text)
+        if app_settings.save_extracted_chunks:
+            await asyncio.to_thread(
+                save_to_temp_dir,
+                f"{row['file_ref']}-chunks",
+                "\n---CHUNK-BOUNDARY---\n".join(chunks),
+            )
         logger.info(
             "extracted %d chunk(s) from %s (file %s)",
             len(chunks),
@@ -133,6 +139,11 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
                 await tasks_repo.mark_superseded(conn, task_uuid)
                 return {"task_id": task_id, "status": "superseded"}
 
+        # Clear any chunks from a previous run before writing the new ones -
+        # upsert() alone would leave stale trailing chunks behind if this
+        # run produced fewer chunks than the last one
+        await milvus_client.delete_file_chunks(collection_name, file_id)
+
         for batch in chunked(milvus_rows, app_settings.milvus_upsert_batch_size):
             await ctx["milvus"].upsert(collection_name=collection_name, data=batch)
     except Exception as exc:
@@ -158,7 +169,14 @@ async def delete_file_vectors_batch(ctx: dict, *, task_ids: list[str]) -> dict:
 
         await tasks_repo.mark_processing_batch(conn, task_uuids)
 
-        # delete associated file vector code goes here
+        for task in tasks:
+            collection_name = milvus_client.collection_name_for_project(
+                task["project_id"]
+            )
+            await milvus_client.delete_file_chunks(
+                collection_name, str(task["file_ref"])
+            )
+
         logger.info("delete_file_vectors_batch: %d file(s)", len(tasks))
 
         await tasks_repo.mark_completed_batch(conn, task_uuids)

@@ -1,9 +1,10 @@
-from worker.chunkers import fixed_size, markdown
+from worker.chunkers import header_aware, markdown, recursive
 from worker.chunkers.base import Chunker, UnknownStrategyError
 
 _BY_NAME: dict[str, Chunker] = {
-    "fixed_size": fixed_size.chunk,
+    "recursive": recursive.chunk,
     "markdown": markdown.chunk,
+    "header_aware": header_aware.chunk,
 }
 
 

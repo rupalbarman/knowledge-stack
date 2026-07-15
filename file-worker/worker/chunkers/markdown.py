@@ -1,6 +1,6 @@
 import re
 
-from worker.chunkers.fixed_size import _chunk_sync
+from worker.chunkers.recursive import _chunk_sync
 from worker.config import settings
 
 # Splits blocks with a double newline separator - with an optional whitespace. For example \n\s\s\s\s\n
