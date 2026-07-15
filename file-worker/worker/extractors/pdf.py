@@ -22,6 +22,8 @@ def _extract_sync(data: bytes) -> str:
             embed_images=False,
             write_images=False,
             ignore_images=True,
+            header=False,
+            footer=False,
         )
         return f"{text}"
 

@@ -4,7 +4,8 @@ from uuid import UUID
 
 from saq import Queue
 
-from worker import chunking, db, embeddings, milvus_client, storage
+from worker import db, embeddings, milvus_client, storage
+from worker.chunkers import UnknownStrategyError, get_chunker
 from worker.config import settings as app_settings
 from worker.extractors import ExtractionError, UnsupportedFileTypeError, get_extractor
 from worker.milvus_client import TEXT_MAX_LENGTH
@@ -69,13 +70,23 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
             await tasks_repo.mark_failed(conn, task_uuid, str(exc))
         raise
 
-    chunks = await asyncio.to_thread(chunking.chunk_text, text)
-    logger.info(
-        "extracted %d chunk(s) from %s (file %s)",
-        len(chunks),
-        row["name"],
-        row["file_ref"],
-    )
+    try:
+        chunker = get_chunker(app_settings.chunking_strategy)
+        chunks = await chunker(text)
+        logger.info(
+            "extracted %d chunk(s) from %s (file %s)",
+            len(chunks),
+            row["name"],
+            row["file_ref"],
+        )
+    except UnknownStrategyError as exc:
+        async with pool.acquire() as conn:
+            await tasks_repo.mark_failed(conn, task_uuid, str(exc))
+        return {"task_id": task_id, "status": "failed", "error": str(exc)}
+    except Exception as exc:
+        async with pool.acquire() as conn:
+            await tasks_repo.mark_failed(conn, task_uuid, str(exc))
+        raise
 
     oversized = [i for i, chunk in enumerate(chunks) if len(chunk) > TEXT_MAX_LENGTH]
     if oversized:

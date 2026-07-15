@@ -1,12 +1,7 @@
 from worker.config import settings
 
 
-def chunk_text(
-    text: str, chunk_size: int | None = None, overlap: int | None = None
-) -> list[str]:
-    chunk_size = chunk_size if chunk_size is not None else settings.chunk_size
-    overlap = overlap if overlap is not None else settings.chunk_overlap
-
+def _chunk_sync(text: str, chunk_size: int, overlap: int) -> list[str]:
     if chunk_size <= overlap:
         raise ValueError("chunk_size must be greater than overlap")
 
@@ -24,3 +19,7 @@ def chunk_text(
         start = end - overlap
 
     return chunks
+
+
+async def chunk(text: str) -> list[str]:
+    return _chunk_sync(text, settings.chunk_size, settings.chunk_overlap)
