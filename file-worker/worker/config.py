@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     chunk_size: int = 1000
     chunk_overlap: int = 200
-    chunking_strategy: str = "markdown_text"
+    chunking_strategy: str = "header_aware"
 
     embedding_dimension: int = 1024
     # partition key for milvus collection, used to separate folders.
