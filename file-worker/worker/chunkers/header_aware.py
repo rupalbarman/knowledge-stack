@@ -81,7 +81,7 @@ def _pack_section(section: list[str], chunk_size: int, overlap: int) -> list[str
     buffer: list[str] = []
     buffer_len = len(prefix)
     # tail of the last plain content flushed in this section - reset (not
-    # updated) after a table/figure, so one never inherits another's
+    # updated) after a table/figure, so one never inherits other's
     # content as its "caption" when they sit back to back.
     last_flushed = ""
 

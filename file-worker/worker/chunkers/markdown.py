@@ -56,13 +56,11 @@ def _recent_caption(chunks: list[str]) -> str:
 
 
 def _split_pipe_table(block: str, chunk_size: int, caption: str = "") -> list[str]:
-    """GFM pipe tables (pymupdf4llm's native table output) have a
-    well-defined header/separator/rows structure, so unlike the opaque
-    <table> blocks above, these can be safely split at row boundaries when
-    the whole table doesn't fit in one chunk. The column header is
-    repeated in every fragment so each one stays independently readable -
-    `caption` (the table's title/caption, not its column header) is
-    likewise repeated, since it identifies what the numbers even are."""
+    """
+    pdf.py extractor spits out github markdown tables. This is also considered an atomic block
+    just like the <table> and <figure>. We ensure that mid-table chunk breaks are avoided and if done,
+    we include the table header and its title / caption to every table chunk.
+    """
     lines = [line for line in block.splitlines() if line.strip()]
     header = lines[:1]
     if len(lines) > 1 and _SEPARATOR_ROW.match(lines[1].strip()):
@@ -102,9 +100,9 @@ async def chunk(text: str) -> list[str]:
     at row boundaries with its header repeated in every fragment, instead
     of being cut mid-row like a plain character-offset split would.
 
-    Unlike fixed_size, there's no overlap between packed blocks - overlap
+    There's no overlap between packed blocks - overlap
     is only applied within a single oversized block that falls back to
-    character-level splitting."""
+    recursive splitting."""
     chunk_size = settings.chunk_size
     overlap = settings.chunk_overlap
 
