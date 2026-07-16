@@ -35,7 +35,7 @@ def _extract_sync(data: bytes) -> str:
         return f"{text}"
 
 
-async def extract(data: bytes) -> str:
+async def extract(name: str, data: bytes) -> str:
     try:
         text = await asyncio.to_thread(_extract_sync, data)
         parse_error = None
@@ -61,4 +61,4 @@ async def extract(data: bytes) -> str:
             "falling back to OCR"
         )
 
-    return await ocr_extract(data)
+    return await ocr_extract(name, data)

@@ -114,7 +114,7 @@ async def _ocr_page(
         ) from exc
 
 
-async def extract(data: bytes) -> str:
+async def extract(name: str, data: bytes) -> str:
     """OCR fallback for scanned/image-only PDFs. Renders each page to a
     JPEG and sends it to the OCR model, up to _CONCURRENCY requests in
     flight at once. A page that fails is replaced with a placeholder
