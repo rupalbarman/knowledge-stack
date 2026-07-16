@@ -2,22 +2,7 @@ import asyncio
 import csv
 import io
 
-from worker.extractors.base import ExtractionError
-
-
-def _escape_cell(value: str) -> str:
-    # markdown pipe-table cells can't contain a raw "|" (the delimiter) or a
-    # raw newline (a quoted CSV field can legitimately contain one, in
-    # any of the three line-ending conventions - CRLF, bare LF, or bare
-    # CR - since csv.reader preserves whatever was actually in the file).
-    # Order matters: CRLF first, so a paired \r\n becomes one <br>
-    # instead of two.
-    return (
-        value.replace("|", "\\|")
-        .replace("\r\n", "<br>")
-        .replace("\n", "<br>")
-        .replace("\r", "<br>")
-    )
+from worker.extractors.base import ExtractionError, escape_table_cell
 
 
 def _extract_sync(data: bytes) -> str:
@@ -30,7 +15,7 @@ def _extract_sync(data: bytes) -> str:
 
     try:
         rows = [
-            [_escape_cell(cell) for cell in row]
+            [escape_table_cell(cell) for cell in row]
             for row in csv.reader(io.StringIO(text))
         ]
     except csv.Error as exc:
