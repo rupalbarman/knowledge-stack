@@ -6,7 +6,11 @@ from docx import Document
 from docx.table import Table
 from docx.text.paragraph import Paragraph
 
-from worker.extractors.base import ExtractionError, escape_table_cell
+from worker.extractors.base import (
+    ExtractionError,
+    escape_table_cell,
+    rows_to_markdown_table,
+)
 
 _HEADING_STYLE = re.compile(r"^Heading (\d+)$")
 
@@ -33,22 +37,7 @@ def _paragraph_to_markdown(paragraph: Paragraph) -> str:
 
 def _table_to_markdown(table: Table) -> str:
     rows = [[escape_table_cell(cell.text) for cell in row.cells] for row in table.rows]
-    rows = [row for row in rows if any(cell.strip() for cell in row)]
-    if not rows:
-        return ""
-
-    header, *data_rows = rows
-    col_count = len(header)
-
-    lines = [
-        "|" + "|".join(header) + "|",
-        "|" + "|".join(["---"] * col_count) + "|",
-    ]
-    for row in data_rows:
-        padded = (row + [""] * col_count)[:col_count]
-        lines.append("|" + "|".join(padded) + "|")
-
-    return "\n".join(lines)
+    return rows_to_markdown_table(rows)
 
 
 def _extract_sync(data: bytes) -> str:
