@@ -11,6 +11,11 @@ from app.config import settings
 _S3_CONFIG = Config(signature_version="s3v4", s3={"addressing_style": "path"})
 
 
+class FileTooLargeError(Exception):
+    """Raised mid-upload once the stream exceeds settings.max_file_upload_bytes -
+    checked as chunks arrive rather than after the full upload completes"""
+
+
 class AsyncReadable(Protocol):
     async def read(self, size: int) -> bytes: ...
 
@@ -56,6 +61,11 @@ async def ensure_bucket() -> None:
 
 # unused for now
 async def upload_bytes(key: str, data: bytes, content_type: str | None) -> None:
+    if len(data) > settings.max_file_upload_bytes:
+        raise FileTooLargeError(
+            f"upload exceeded {settings.max_file_upload_bytes} bytes"
+        )
+
     async with s3_client() as client:
         await client.put_object(
             Bucket=settings.rustfs_bucket_name,
@@ -99,6 +109,11 @@ async def upload_bytes_stream(
                 parts.append({"ETag": response["ETag"], "PartNumber": part_number})
                 total_bytes += len(chunk)
                 part_number += 1
+
+                if total_bytes > settings.max_file_upload_bytes:
+                    raise FileTooLargeError(
+                        f"upload exceeded {settings.max_file_upload_bytes} bytes"
+                    )
         except Exception:
             await client.abort_multipart_upload(
                 Bucket=settings.rustfs_bucket_name, Key=key, UploadId=upload_id

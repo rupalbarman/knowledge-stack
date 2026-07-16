@@ -12,6 +12,7 @@ from app.repositories import files as files_repo
 from app.repositories import folders as folders_repo
 from app.repositories import tasks as tasks_repo
 from app.storage import (
+    FileTooLargeError,
     delete_object,
     generate_presigned_download_url,
     upload_bytes_stream,
@@ -150,7 +151,13 @@ async def create_file(
         storage_key = f"{project['id']}/{file_id}"
 
         # todo(Rupal): Notice how s3 upload is done before the file creation - possible orphaned object, handle it
-        size_bytes = await upload_bytes_stream(storage_key, file, file.content_type)
+        try:
+            size_bytes = await upload_bytes_stream(storage_key, file, file.content_type)
+        except FileTooLargeError as e:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                detail=str(e),
+            )
 
         async with conn.transaction():
             try:

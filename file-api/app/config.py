@@ -31,6 +31,8 @@ class Settings(BaseSettings):
 
     # Size of each part in a multipart upload to RustFS / S3
     upload_chunk_size: int = 8 * 1024 * 1024
+    # Hard cap on a single file's upload size (20 MB)
+    max_file_upload_bytes: int = 20 * 1024 * 1024
 
     milvus_uri: str = "http://localhost:19530"
 
