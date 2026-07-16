@@ -46,6 +46,8 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
         await tasks_repo.mark_processing(conn, task_uuid)
 
     try:
+        # todo(Rupal): download to a temp file path and pass the file location around
+        # and cleanup in a finally block
         contents = await storage.download_bytes(row["storage_key"])
     except Exception as exc:
         async with pool.acquire() as conn:
