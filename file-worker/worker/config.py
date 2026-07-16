@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     chunk_size: int = 1000
     chunk_overlap: int = 200
+    chunking_strategy: str = "header_aware"
 
     embedding_dimension: int = 1024
     # partition key for milvus collection, used to separate folders.
@@ -41,9 +42,9 @@ class Settings(BaseSettings):
     # controls how many rows / chunks are upserted to milvus in one go
     milvus_upsert_batch_size: int = 200
 
-    # debug-only: writes every extracted document's text to disk. Off by
-    # default since it dumps tenant content to a local, unscoped directory.
+    # debug-only: writes every extracted document's text to disk
     save_extracted_text: bool = False
+    save_extracted_chunks: bool = False
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,

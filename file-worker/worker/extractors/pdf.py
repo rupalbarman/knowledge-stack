@@ -10,8 +10,15 @@ from worker.extractors.pdf_ocr import extract as ocr_extract
 
 logger = logging.getLogger(__name__)
 
-# Cut-off text length to switch to OCR if available
+# Cut-off amount of actual content (not raw text length) to switch to OCR
+# if available
 _MIN_TEXT_LENGTH = 20
+
+
+def _content_length(text: str) -> int:
+    # Counts only letters/digits, not raw string length and str.isalnum()
+    # is Unicode-aware
+    return sum(1 for c in text if c.isalnum())
 
 
 def _extract_sync(data: bytes) -> str:
@@ -22,6 +29,8 @@ def _extract_sync(data: bytes) -> str:
             embed_images=False,
             write_images=False,
             ignore_images=True,
+            header=False,
+            footer=False,
         )
         return f"{text}"
 
@@ -34,7 +43,7 @@ async def extract(data: bytes) -> str:
         text = None
         parse_error = exc
 
-    if parse_error is None and text and len(text.strip()) >= _MIN_TEXT_LENGTH:
+    if parse_error is None and text and _content_length(text) >= _MIN_TEXT_LENGTH:
         return text
 
     if not settings.ocr_url:
@@ -48,7 +57,8 @@ async def extract(data: bytes) -> str:
         logger.info("could not parse PDF (%s), falling back to OCR", parse_error)
     else:
         logger.info(
-            f"PDF yielded less than {_MIN_TEXT_LENGTH} char(s) of text, falling back to OCR"
+            f"PDF yielded less than {_MIN_TEXT_LENGTH} letter/digit char(s), "
+            "falling back to OCR"
         )
 
     return await ocr_extract(data)

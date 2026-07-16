@@ -8,3 +8,4 @@ asyncpg>=0.30
 aioboto3>=13.2
 pymupdf>=1.28
 pymupdf4llm>=1.28
+langchain-text-splitters>=1.1.2
