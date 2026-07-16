@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from worker.extractors import csv, docx, pdf, pptx, text
+from worker.extractors import csv, docx, pdf, pptx, text, xlsx
 from worker.extractors.base import ExtractionError, Extractor, UnsupportedFileTypeError
 
 # Keyed by extension rather than the upload's reported content_type - that
@@ -16,6 +16,7 @@ _BY_EXTENSION: dict[str, Extractor] = {
     ".csv": csv.extract,
     ".docx": docx.extract,
     ".pptx": pptx.extract,
+    ".xlsx": xlsx.extract,
 }
 
 
