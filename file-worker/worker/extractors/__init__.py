@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from worker.extractors import pdf, text
+from worker.extractors import csv, pdf, text
 from worker.extractors.base import ExtractionError, Extractor, UnsupportedFileTypeError
 
 # Keyed by extension rather than the upload's reported content_type - that
@@ -13,6 +13,7 @@ _BY_EXTENSION: dict[str, Extractor] = {
     ".md": pdf.extract,
     ".epub": pdf.extract,
     ".mobi": pdf.extract,
+    ".csv": csv.extract,
 }
 
 

@@ -54,7 +54,7 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
 
     try:
         extractor = get_extractor(row["name"])
-        text = await extractor(contents)
+        text = await extractor(row["name"], contents)
 
         if app_settings.save_extracted_text:
             await asyncio.to_thread(save_to_temp_dir, row["file_ref"], text)
@@ -94,12 +94,17 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
             await tasks_repo.mark_failed(conn, task_uuid, str(exc))
         raise
 
-    oversized = [i for i, chunk in enumerate(chunks) if len(chunk) > TEXT_MAX_LENGTH]
+    # Milvus text field varchar length is measured in bytes and we check the size
+    # based on character encoding. For instance, thai text is 3 bytes per char in UTF-8
+    oversized = [
+        i
+        for i, chunk in enumerate(chunks)
+        if len(chunk.encode("utf-8")) > TEXT_MAX_LENGTH
+    ]
     if oversized:
-        # Not retryable since a chunk that's too long will be too long on every
-        # retry too.
+        # Not retryable since a chunk that's too long will be too long on every retry
         error = (
-            f"chunk(s) {oversized} exceed the {TEXT_MAX_LENGTH}-character "
+            f"chunk(s) {oversized} exceed the {TEXT_MAX_LENGTH}-byte "
             "Milvus text field limit"
         )
         async with pool.acquire() as conn:
@@ -110,6 +115,10 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
         # Ensure collection and schema exists to insert rows into
         collection_name = await milvus_client.ensure_collection(row["project_id"])
 
+        # todo(Rupal): There's no hard-check to ensure that input to the embedding model is falling
+        # under its input token limit and the model could silently swallow up the error and return a partial
+        # vector.
+        # Consider using a tokenizer check here of the same embedding model
         vectors = await embeddings.embed(chunks)
 
         folder_id = (
