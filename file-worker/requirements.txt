@@ -1,4 +1,4 @@
-saq[web]~=0.26.4
+saq~=0.26.4
 redis~=8.0.1
 pymilvus~=3.0.0
 httpx~=0.28.1

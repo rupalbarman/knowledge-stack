@@ -1,6 +1,6 @@
 fastapi~=0.139.0
 uvicorn[standard]~=0.50.0
-saq~=0.26.4
+saq[web]~=0.26.4
 redis~=8.0.1
 httpx~=0.28.1
 asyncpg~=0.31.0

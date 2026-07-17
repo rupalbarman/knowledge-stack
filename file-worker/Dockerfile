@@ -9,4 +9,4 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD ["saq", "worker.main.settings", "--web", "--port", "8081"]
+CMD ["saq", "worker.main.settings", "-v"]
