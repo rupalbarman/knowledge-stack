@@ -17,8 +17,6 @@ services:
       RUSTFS_BUCKET_NAME: content-bucket
       STORAGE_PUBLIC_URL: http://localhost:9000
       MILVUS_URI: http://localhost:19530
-    ports:
-      - "8000:8000"
     volumes:
       - ./file-api:/app
     network_mode: host
@@ -40,8 +38,6 @@ services:
       RUSTFS_ACCESS_KEY: minioadmin
       RUSTFS_SECRET_KEY: minioadmin
       RUSTFS_BUCKET_NAME: content-bucket
-    ports:
-      - "8081:8081" # saq web UI
     volumes:
       - ./file-worker:/app
     depends_on:
