@@ -95,7 +95,7 @@ async def upload_bytes_stream(
 
         try:
             while True:
-                chunk = await file.read(settings.upload_chunk_size)
+                chunk = await file.read(settings.upload_chunk_size_bytes)
                 if not chunk:
                     break
 

@@ -17,6 +17,16 @@ logger = logging.getLogger(__name__)
 queue = Queue.from_url(app_settings.redis_url)
 
 
+async def _fail_task(pool, task_uuid: UUID, exc: BaseException) -> None:
+    message = (
+        "job cancelled or timed out"
+        if isinstance(exc, asyncio.CancelledError)
+        else str(exc)
+    )
+    async with pool.acquire() as conn:
+        await tasks_repo.mark_failed(conn, task_uuid, message)
+
+
 async def startup(ctx: dict) -> None:
     await milvus_client.connect()
     await db.connect()
@@ -49,9 +59,8 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
         # todo(Rupal): download to a temp file path and pass the file location around
         # and cleanup in a finally block
         contents = await storage.download_bytes(row["storage_key"])
-    except Exception as exc:
-        async with pool.acquire() as conn:
-            await tasks_repo.mark_failed(conn, task_uuid, str(exc))
+    except (Exception, asyncio.CancelledError) as exc:
+        await _fail_task(pool, task_uuid, exc)
         raise
 
     try:
@@ -64,12 +73,10 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
     except (UnsupportedFileTypeError, ExtractionError) as exc:
         # Not retryable - the file's type/content won't change on its own,
         # so there's no point letting saq retry this job.
-        async with pool.acquire() as conn:
-            await tasks_repo.mark_failed(conn, task_uuid, str(exc))
+        await _fail_task(pool, task_uuid, exc)
         return {"task_id": task_id, "status": "failed", "error": str(exc)}
-    except Exception as exc:
-        async with pool.acquire() as conn:
-            await tasks_repo.mark_failed(conn, task_uuid, str(exc))
+    except (Exception, asyncio.CancelledError) as exc:
+        await _fail_task(pool, task_uuid, exc)
         raise
 
     try:
@@ -88,12 +95,10 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
             row["file_ref"],
         )
     except UnknownStrategyError as exc:
-        async with pool.acquire() as conn:
-            await tasks_repo.mark_failed(conn, task_uuid, str(exc))
+        await _fail_task(pool, task_uuid, exc)
         return {"task_id": task_id, "status": "failed", "error": str(exc)}
-    except Exception as exc:
-        async with pool.acquire() as conn:
-            await tasks_repo.mark_failed(conn, task_uuid, str(exc))
+    except (Exception, asyncio.CancelledError) as exc:
+        await _fail_task(pool, task_uuid, exc)
         raise
 
     # Milvus text field varchar length is measured in bytes and we check the size
@@ -157,9 +162,8 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
 
         for batch in chunked(milvus_rows, app_settings.milvus_upsert_batch_size):
             await ctx["milvus"].upsert(collection_name=collection_name, data=batch)
-    except Exception as exc:
-        async with pool.acquire() as conn:
-            await tasks_repo.mark_failed(conn, task_uuid, str(exc))
+    except (Exception, asyncio.CancelledError) as exc:
+        await _fail_task(pool, task_uuid, exc)
         raise
 
     async with pool.acquire() as conn:
