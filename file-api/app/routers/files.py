@@ -77,7 +77,7 @@ async def sync_file(file_id: UUID, project=Depends(get_current_project)) -> Task
                 project["id"],
                 file["id"],
                 file["name"],
-                task_type="vectorize",
+                task_type="upsert_vectors",
                 reason="manual",
             )
             await files_repo.set_latest_task(conn, file["id"], task_id)
@@ -184,7 +184,7 @@ async def create_file(
                 project["id"],
                 record["id"],
                 record["name"],
-                task_type="vectorize",
+                task_type="upsert_vectors",
                 reason="upload",
             )
             await files_repo.set_latest_task(conn, record["id"], task_id)

@@ -11,7 +11,8 @@ CREATE TABLE tasks (
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     file_ref UUID NOT NULL,
     file_name TEXT NOT NULL,
-    type TEXT NOT NULL DEFAULT 'vectorize',
+    type TEXT NOT NULL DEFAULT 'upsert_vectors'
+        CHECK (type IN ('upsert_vectors', 'delete_vectors')),
     reason TEXT NOT NULL CHECK (reason IN ('upload', 'manual', 'delete')),
     status TEXT NOT NULL DEFAULT 'pending'
         CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'superseded')),
@@ -26,5 +27,5 @@ CREATE INDEX idx_tasks_project ON tasks(project_id);
 
 -- latest_task_id represents the latest "constructive" task, i.e. creating a vector.
 -- This is to ensure worker only picks up latest change and ignores any in-flight updates to
--- avoid wasteful computation/ extraction.
+-- avoid wasteful computation/extraction.
 ALTER TABLE files ADD COLUMN latest_task_id UUID REFERENCES tasks(id) ON DELETE SET NULL;
