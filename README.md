@@ -12,7 +12,6 @@ Content storage solution backed by a vector store for agentic needs
 - [Data storage](#data-storage)
   - [Files (S3 / RustFS)](#files-s3--rustfs)
   - [Vectors (Milvus)](#vectors-milvus)
-- [Known caveats](#known-caveats)
 
 ## Architecture
 
@@ -74,17 +73,3 @@ Both, the content files and Milvus object storage use S3 compliant storage syste
 - Inside a project's collection, each folder is a **partition key** value. This allows scoped searches to allow searches within "folders". Refer Milvus documentation for additional information.
 - Files not belonging to any folder, i.e. present in project root get a special folder partition key.
 - Milvus only ever holds vectors and a bit of metadata. It is not a source of truth. The real files live in storage (S3 / RustFS) and the real records live in Postgres - allowing rebuilding Milvus record easier.
-
-## Known caveats
-
-- **Orphaned RustFS objects on file-create rollback** (`file-api/app/routers/files.py`,
-  `create_file`): the object upload to RustFS happens _before_ the Postgres
-  transaction that inserts the `files`/`tasks` rows. If that transaction rolls
-  back (e.g. a duplicate filename, or any error inserting the task), the
-  already-uploaded bytes are left in RustFS with no DB row ever pointing at
-  them - a harmless but real storage leak. RustFS isn't a participant in the
-  Postgres transaction, so this can't be fixed with `conn.transaction()`
-  alone; would need either a reconciliation/GC job that sweeps
-  orphaned keys, or reordering to upload only after the DB rows are committed
-  (at the cost of a race where a committed file row briefly has no object
-  behind it).
