@@ -5,7 +5,7 @@ import asyncpg
 
 type DBConnection = asyncpg.Connection | asyncpg.pool.PoolConnectionProxy
 
-TaskType = Literal["vectorize", "delete_vectors"]
+TaskType = Literal["upsert_vectors", "delete_vectors"]
 TaskReason = Literal["upload", "manual", "delete"]
 
 

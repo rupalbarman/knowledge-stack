@@ -7,7 +7,7 @@ CREATE TABLE users (
 );
 
 -- Project is the tenant boundary
--- owner_id is UNIQUE to enforce 1 user <-> 1 project; Might change we include project sharing
+-- owner_id is UNIQUE to enforce 1 user <-> 1 project; Might change to accommodate project sharing
 CREATE TABLE projects (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL,

@@ -77,7 +77,7 @@ async def sync_file(file_id: UUID, project=Depends(get_current_project)) -> Task
                 project["id"],
                 file["id"],
                 file["name"],
-                task_type="vectorize",
+                task_type="upsert_vectors",
                 reason="manual",
             )
             await files_repo.set_latest_task(conn, file["id"], task_id)
@@ -101,6 +101,9 @@ async def delete_file(file_id: UUID, project=Depends(get_current_project)) -> No
                 status_code=status.HTTP_404_NOT_FOUND, detail="file not found"
             )
 
+        # todo(Rupal): Deletion of file in storage happens before the deletion in db / record
+        # If the transaction below rolls back, the files row survives pointing at a storage_key
+        # that's already gone - a dangling reference
         await delete_object(file["storage_key"])
 
         async with conn.transaction():
@@ -150,7 +153,10 @@ async def create_file(
         file_id = uuid4()
         storage_key = f"{project['id']}/{file_id}"
 
-        # todo(Rupal): Notice how s3 upload is done before the file creation - possible orphaned object, handle it
+        # todo(Rupal): Notice how s3 upload is done before the file creation
+        # If the transaction below rolls back, the uploaded bytes are left in RustFS with no
+        # files row ever pointing at them - an orphaned object
+
         try:
             size_bytes = await upload_bytes_stream(storage_key, file, file.content_type)
         except FileTooLargeError as e:
@@ -184,7 +190,7 @@ async def create_file(
                 project["id"],
                 record["id"],
                 record["name"],
-                task_type="vectorize",
+                task_type="upsert_vectors",
                 reason="upload",
             )
             await files_repo.set_latest_task(conn, record["id"], task_id)
