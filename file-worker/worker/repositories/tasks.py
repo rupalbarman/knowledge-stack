@@ -68,6 +68,16 @@ async def mark_failed(conn: DBConnection, task_id: UUID, error: str) -> None:
     )
 
 
+async def mark_failed_batch(
+    conn: DBConnection, task_ids: list[UUID], error: str
+) -> None:
+    await conn.execute(
+        "UPDATE tasks SET status = 'failed', error = $2, completed_at = now() WHERE id = ANY($1::uuid[])",
+        task_ids,
+        error,
+    )
+
+
 async def mark_superseded(conn: DBConnection, task_id: UUID) -> None:
     await conn.execute(
         "UPDATE tasks SET status = 'superseded', completed_at = now() WHERE id = $1",
