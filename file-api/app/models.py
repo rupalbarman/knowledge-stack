@@ -113,3 +113,10 @@ class TaskOut(BaseModel):
     created_at: datetime
     started_at: datetime | None
     completed_at: datetime | None
+
+
+class TaskPage(BaseModel):
+    items: list[TaskOut]
+    total: int
+    limit: int
+    offset: int
