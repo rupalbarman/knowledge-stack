@@ -66,10 +66,49 @@ async def create_batch(
 
 
 async def list_by_project_id(
-    conn: DBConnection, project_id: UUID
+    conn: DBConnection,
+    project_id: UUID,
+    file_id: UUID | None,
+    limit: int,
+    offset: int,
 ) -> list[asyncpg.Record]:
-    records = await conn.fetch(
-        "SELECT * FROM tasks WHERE project_id = $1 ORDER BY created_at DESC",
+    if file_id is not None:
+        return await conn.fetch(
+            """
+            SELECT * FROM tasks
+            WHERE project_id = $1 AND file_ref = $2
+            ORDER BY created_at DESC
+            LIMIT $3 OFFSET $4
+            """,
+            project_id,
+            file_id,
+            limit,
+            offset,
+        )
+
+    return await conn.fetch(
+        """
+        SELECT * FROM tasks
+        WHERE project_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
+        """,
         project_id,
+        limit,
+        offset,
     )
-    return records
+
+
+async def count_by_project_id(
+    conn: DBConnection, project_id: UUID, file_id: UUID | None
+) -> int:
+    if file_id is not None:
+        return await conn.fetchval(
+            "SELECT COUNT(*) FROM tasks WHERE project_id = $1 AND file_ref = $2",
+            project_id,
+            file_id,
+        )
+
+    return await conn.fetchval(
+        "SELECT COUNT(*) FROM tasks WHERE project_id = $1", project_id
+    )

@@ -22,8 +22,10 @@ CREATE TABLE tasks (
     completed_at TIMESTAMPTZ
 );
 
-CREATE INDEX idx_tasks_file_ref ON tasks(file_ref);
-CREATE INDEX idx_tasks_project ON tasks(project_id);
+-- Supports GET /tasks (project-scoped, ordered by created_at, paginated)
+CREATE INDEX idx_tasks_project_created ON tasks(project_id, created_at DESC);
+-- Supports GET /tasks?file_id=... (project + file scoped, ordered by created_at, paginated)
+CREATE INDEX idx_tasks_project_file_created ON tasks(project_id, file_ref, created_at DESC);
 
 -- latest_task_id represents the latest "constructive" task, i.e. creating a vector.
 -- This is to ensure worker only picks up latest change and ignores any in-flight updates to
