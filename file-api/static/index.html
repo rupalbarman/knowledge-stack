@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Knowledge Stack Dev UI</title>
+        <link rel="stylesheet" href="/ui/style.css" />
+    </head>
+    <body>
+        <header>
+            <h1>Knowledge Stack</h1>
+            <p class="hint">Dev UI - Not for production use</p>
+        </header>
+
+        <main>
+            <section class="panel">
+                <h2>Folders</h2>
+                <ul id="folder-list" class="folder-list"></ul>
+            </section>
+
+            <section class="panel">
+                <h2 id="files-title">Files</h2>
+                <div class="upload-row">
+                    <span
+                        >Upload to:
+                        <strong id="upload-target">(root)</strong></span
+                    >
+                    <input type="file" id="upload-input" />
+                    <button id="upload-btn">Upload</button>
+                    <span id="upload-status" class="upload-status"></span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Content type</th>
+                            <th>Size</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody id="files-body"></tbody>
+                </table>
+            </section>
+            <section class="panel panel-wide">
+                <div class="tasks-header">
+                    <h2>Tasks</h2>
+                    <button id="tasks-refresh-btn">Refresh</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Type</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th>Error</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasks-body"></tbody>
+                </table>
+                <div class="pagination-row">
+                    <button id="tasks-prev-btn">Prev</button>
+                    <span id="tasks-page-info"></span>
+                    <button id="tasks-next-btn">Next</button>
+                </div>
+            </section>
+        </main>
+
+        <script src="/ui/app.js"></script>
+    </body>
+</html>

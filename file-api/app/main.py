@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from saq.web.starlette import saq_web
 
 from app import db, milvus_client
@@ -26,6 +27,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="file-api", lifespan=lifespan)
 
 app.mount("/monitor", saq_web("/monitor", queues=[queue]))
+app.mount("/ui", StaticFiles(directory="static", html=True), name="ui")
 
 app.include_router(auth.router)
 app.include_router(users.router)
