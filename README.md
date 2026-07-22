@@ -55,6 +55,10 @@ Two services, connected via a Redis-backed job queue ([`saq`](https://github.com
   - OR
   - `cd file-api && uvicorn app.main:main`
   - `cd file-worker && saq worker.main.settings -v`
+- To use the simple Dev UI for quick view of files, folders and tasks of a user / project
+  - Update JWT token at `file-api/static/app.js`
+  - Re-run `file-api` and navigate to `/ui`
+- To monitor queues, the dashboard is provided by `SAQ` and can be accessed by navigating to `/monitor`
 
 ## Data storage
 
