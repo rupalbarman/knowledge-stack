@@ -7,8 +7,11 @@ import {
 } from "react";
 import {
   LogOut,
+  Monitor,
+  Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  Sun,
   User,
   Home,
 } from "lucide-react";
@@ -18,9 +21,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useTheme } from "@/components/theme-provider";
 import { userHooks } from "@/hooks/user-hooks";
 import { authenticationSession } from "@/lib/authentication-session";
-import { cn } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
 export type SidebarMode = "full" | "small";
@@ -92,6 +96,32 @@ export function SidebarButton({
   );
 }
 
+const THEME_ICONS = {
+  light: Sun,
+  dark: Moon,
+  system: Monitor,
+} as const;
+
+const NEXT_THEME = {
+  light: "dark",
+  dark: "system",
+  system: "light",
+} as const;
+
+// Cycles light -> dark -> system -> light on each click
+function SidebarThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const ThemeIcon = THEME_ICONS[theme];
+
+  return (
+    <SidebarButton
+      icon={<ThemeIcon className="size-4 shrink-0" />}
+      label={`Theme: ${capitalize(theme)}`}
+      onClick={() => setTheme(NEXT_THEME[theme])}
+    />
+  );
+}
+
 // Split out (and Suspense-wrapped here, not by the caller) since
 // userHooks.useCurrentUser uses useSuspenseQuery - keeping that requirement
 // contained means Sidebar itself stays a plain drop-in component.
@@ -100,6 +130,7 @@ function SidebarUserFooter() {
 
   return (
     <div className="border-border space-y-1 border-t p-2">
+      <SidebarThemeToggle />
       <SidebarButton
         icon={<User className="size-4 shrink-0" />}
         label={user?.email ?? "Account"}
