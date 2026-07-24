@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import { ListTodo } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
 
 import { FolderTree } from '@/components/folder-tree'
-import { Sidebar } from '@/components/sidebar'
+import { Sidebar, SidebarButton, SidebarSection } from '@/components/sidebar'
 
 export type AppLayoutContext = {
   selectedFolderId: string | null
@@ -20,9 +21,18 @@ export function AppLayout() {
   return (
     <div className="flex h-screen">
       <Sidebar>
-        <FolderTree
-          selectedFolderId={selectedFolderId}
-          onSelectFolder={(folderId) => setSelectedFolderId(folderId)}
+        <SidebarSection title="Folders">
+          <FolderTree
+            selectedFolderId={selectedFolderId}
+            onSelectFolder={(folderId) => setSelectedFolderId(folderId)}
+          />
+        </SidebarSection>
+
+        {/* todo: hook up to TasksPage once it exists */}
+        <SidebarButton
+          icon={<ListTodo className="size-4 shrink-0" />}
+          label="Tasks"
+          onClick={() => {}}
         />
       </Sidebar>
 
