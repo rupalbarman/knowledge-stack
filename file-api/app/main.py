@@ -2,7 +2,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from saq.web.starlette import saq_web
 
 from app import db, milvus_client
@@ -39,7 +38,6 @@ app.add_middleware(
 )
 
 app.mount("/monitor", saq_web("/monitor", queues=[queue]))
-app.mount("/ui", StaticFiles(directory="static", html=True), name="ui")
 
 app.include_router(auth.router)
 app.include_router(users.router)
