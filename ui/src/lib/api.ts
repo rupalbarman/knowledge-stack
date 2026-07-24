@@ -11,7 +11,7 @@ import { authenticationSession } from "@/lib/authentication-session";
 import { ErrorCode } from "@/common";
 
 export const API_BASE_URL =
-  import.meta.env.VITE_BACKEND_URL ?? window.location.origin;
+  import.meta.env.BACKEND_URL ?? window.location.origin;
 export const API_URL = `${API_BASE_URL}`;
 
 const disallowedRoutes = [
