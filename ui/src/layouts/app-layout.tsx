@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ListTodo } from 'lucide-react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 
 import { FolderTree } from '@/components/folder-tree'
 import { Sidebar, SidebarButton, SidebarSection } from '@/components/sidebar'
@@ -17,6 +17,13 @@ export function AppLayout() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
     null,
   )
+  const navigate = useNavigate()
+
+  // Jump to relevant files page of the selected folder
+  function handleSelectFolder(folderId: string | null) {
+    setSelectedFolderId(folderId)
+    navigate('/')
+  }
 
   return (
     <div className="flex h-screen">
@@ -24,15 +31,14 @@ export function AppLayout() {
         <SidebarSection title="Folders">
           <FolderTree
             selectedFolderId={selectedFolderId}
-            onSelectFolder={(folderId) => setSelectedFolderId(folderId)}
+            onSelectFolder={handleSelectFolder}
           />
         </SidebarSection>
 
-        {/* todo: hook up to TasksPage once it exists */}
         <SidebarButton
           icon={<ListTodo className="size-4 shrink-0" />}
           label="Tasks"
-          onClick={() => {}}
+          onClick={() => navigate('/tasks')}
         />
       </Sidebar>
 
