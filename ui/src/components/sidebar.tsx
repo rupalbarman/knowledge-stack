@@ -105,7 +105,9 @@ function SidebarHeader({
     <div
       className={cn(
         "border-border flex border-b p-2",
-        mode === "full" ? "items-center justify-end" : "flex-col gap-1",
+        mode === "full"
+          ? "h-14 items-center justify-end"
+          : "flex-col gap-1",
       )}
     >
       <SidebarButton
