@@ -146,5 +146,13 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       params: params,
     }),
+  // No Content-Type header here on purpose - axios sets multipart/form-data
+  // with the correct boundary itself when data is a FormData instance, and
+  // forcing a header (like post()'s default application/json) would break that.
+  upload: <TResponse>(url: string, formData: FormData) =>
+    request<TResponse>(url, {
+      method: "POST",
+      data: formData,
+    }),
   httpStatus: HttpStatusCode,
 };

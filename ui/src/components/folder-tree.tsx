@@ -40,7 +40,7 @@ function FolderTreeRow({
       className={cn(
         'cursor-pointer rounded-md py-1.5 pr-2 text-sm select-none',
         isSelected
-          ? 'bg-accent text-accent-foreground font-medium'
+          ? 'bg-primary/10 text-primary font-medium'
           : 'hover:bg-accent/50',
       )}
     >

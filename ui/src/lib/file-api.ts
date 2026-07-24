@@ -8,4 +8,12 @@ export const fileApi = {
       folderId ? { folder_id: folderId } : undefined,
     );
   },
+  upload(file: File, folderId: string | null) {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (folderId) {
+      formData.append("folder_id", folderId);
+    }
+    return api.upload<FileObject>("/files", formData);
+  },
 };
