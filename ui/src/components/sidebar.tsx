@@ -23,10 +23,9 @@ type SidebarProps = {
   children?: ReactNode;
 };
 
-// Icon + label in "full" mode, icon-only (label moves to a hover tooltip) in
-// "small" mode. Set alwaysIconOnly for buttons that don't have a distinct
-// full-view treatment - e.g. the collapse/expand toggle itself - so they stay
-// icon-only in both modes and rely on the tooltip alone, in either mode.
+// todo: iconOnly buttons only get a hover tooltip in "small" mode - in "full"
+// mode they show no label and no tooltip. Fine for now (the icon reads on its
+// own), but worth wrapping in Tooltip regardless of mode if that changes.
 function SidebarButton({
   icon,
   label,
