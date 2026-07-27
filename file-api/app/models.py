@@ -83,7 +83,7 @@ class PresignedUrlOut(BaseModel):
 
 
 class SearchOptions(BaseModel):
-    mode: Literal["dense", "sparse", "hybrid"] = "dense"
+    mode: Literal["dense", "sparse", "hybrid"] = "hybrid"
     top_k: int | None = None
     min_score: float | None = None
 
