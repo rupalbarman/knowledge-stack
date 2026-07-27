@@ -10,15 +10,11 @@ import qs from "qs";
 import { authenticationSession } from "@/lib/authentication-session";
 import { ErrorCode } from "@/common";
 
-export const API_BASE_URL =
-  import.meta.env.VITE_BACKEND_URL ?? window.location.origin;
-export const API_URL = `${API_BASE_URL}`;
+// Falls back to same-origin "/api" (proxied to file-api by nginx/ingress in
+// production)
+export const API_URL = `${window.location.origin}/api`;
 
-const disallowedRoutes = [
-  "/auth/login",
-  "/auth/sign-up",
-  "/webhooks",
-];
+const disallowedRoutes = ["/auth/login", "/auth/sign-up", "/webhooks"];
 
 function isUrlRelative(url: string) {
   return !url.startsWith("http") && !url.startsWith("https");
