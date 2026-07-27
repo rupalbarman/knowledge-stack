@@ -1,6 +1,4 @@
-// Matches file-api's TokenResponse (POST /auth/login) - no user/project info is
-// returned at login, only the token. Fetch that separately via GET /users/me.
-export type AuthenticationResponse = {
+export type SignInResponse = {
   access_token: string;
   token_type: string;
 };
@@ -17,6 +15,11 @@ export type SignOutRequest = {
 export type SignUpRequest = {
   email: string;
   password: string;
+};
+
+export type SignUpResponse = {
+  id: string;
+  email: string;
 };
 
 export type SwitchProjectRequest = {

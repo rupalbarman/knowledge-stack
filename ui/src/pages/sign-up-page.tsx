@@ -5,7 +5,7 @@ import { api } from '@/lib/api'
 import { authenticationApi } from '@/lib/authentication-api'
 import { authenticationSession } from '@/lib/authentication-session'
 
-export function SignInPage() {
+export function SignUpPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -17,13 +17,16 @@ export function SignInPage() {
     setError(null)
     setIsSubmitting(true)
     try {
+      await authenticationApi.signUp({ email, password })
+      // Sign-up doesn't issue a token itself - sign in right after with the
+      // same credentials so the user isn't asked to type them again.
       const response = await authenticationApi.signIn({ email, password })
       authenticationSession.saveResponse(response)
       navigate('/')
     } catch (err) {
       setError(
-        api.isError(err) && err.response?.status === api.httpStatus.Unauthorized
-          ? 'Invalid email or password'
+        api.isError(err) && err.response?.status === api.httpStatus.Conflict
+          ? 'An account with this email already exists'
           : 'Something went wrong, please try again',
       )
     } finally {
@@ -37,7 +40,7 @@ export function SignInPage() {
         onSubmit={handleSubmit}
         className="border-border bg-card w-80 space-y-4 rounded-md border p-6"
       >
-        <h1 className="text-lg font-semibold">Sign in</h1>
+        <h1 className="text-lg font-semibold">Sign up</h1>
 
         <input
           type="email"
@@ -63,13 +66,13 @@ export function SignInPage() {
           disabled={isSubmitting}
           className="bg-primary text-primary-foreground w-full rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
         >
-          {isSubmitting ? 'Signing in...' : 'Sign in'}
+          {isSubmitting ? 'Signing up...' : 'Sign up'}
         </button>
 
         <p className="text-muted-foreground text-center text-sm">
-          Don't have an account?{' '}
-          <Link to="/sign-up" className="text-primary font-medium">
-            Sign up
+          Already have an account?{' '}
+          <Link to="/sign-in" className="text-primary font-medium">
+            Sign in
           </Link>
         </p>
       </form>

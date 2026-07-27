@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import { jwtDecode } from "jwt-decode";
 
 import { BrowserStorage } from "./browser-storage";
-import type { AuthenticationResponse, UserPrincipal } from "@/common";
+import type { SignInResponse, UserPrincipal } from "@/common";
 import { authenticationApi } from "./authentication-api";
 
 const tokenKey = "token";
@@ -11,7 +11,7 @@ export const authenticationSession = {
   saveToken(token: string) {
     BrowserStorage.getInstance().setItem(tokenKey, token);
   },
-  saveResponse(response: AuthenticationResponse) {
+  saveResponse(response: SignInResponse) {
     BrowserStorage.getInstance().setItem(tokenKey, response.access_token);
     window.dispatchEvent(new Event("storage"));
   },

@@ -5,9 +5,19 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
-class LoginRequest(BaseModel):
+class SignInRequest(BaseModel):
     email: str
     password: str
+
+
+class SignUpRequest(BaseModel):
+    email: str
+    password: str
+
+
+class SignUpResponse(BaseModel):
+    id: UUID
+    email: str
 
 
 class TokenResponse(BaseModel):
