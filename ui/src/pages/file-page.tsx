@@ -15,7 +15,7 @@ export function FilePage({ folderId }: FilePageProps) {
         title="Files"
         actions={
           <>
-            <SearchBox />
+            <SearchBox folderId={folderId} />
             <AddContentMenu folderId={folderId} />
           </>
         }
