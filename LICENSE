@@ -1,0 +1,11 @@
+Copyright (c) 2026 rupalbarman
+
+This repository contains multiple components licensed under different open-source terms.
+
+- Source code and other materials in "file-api/" and "ui/" are licensed under the MIT License.
+- Source code and other materials in "file-worker/" are licensed under the GNU Affero General Public License version 3.0 (AGPL-3.0).
+
+Each component's license terms are provided in its corresponding license file:
+- "ui/LICENSE"
+- "file-api/LICENSE"
+- "file-worker/LICENSE"
