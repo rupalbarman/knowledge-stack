@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     search_default_top_k: int = 10
     search_max_top_k: int = 50
 
+    # Comma-separated list of origins allowed to call this API from a browser (the ui/ app)
+    cors_allowed_origins: str = "http://localhost:5173"
+
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,
         env_file_encoding="utf-8",
