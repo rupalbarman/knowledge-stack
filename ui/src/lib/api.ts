@@ -14,7 +14,7 @@ import { ErrorCode } from "@/common";
 // production)
 export const API_URL = `${window.location.origin}/api`;
 
-const disallowedRoutes = ["/auth/login", "/auth/sign-up", "/webhooks"];
+const disallowedRoutes = ["/auth/sign-in", "/auth/sign-up", "/webhooks"];
 
 function isUrlRelative(url: string) {
   return !url.startsWith("http") && !url.startsWith("https");

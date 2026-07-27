@@ -1,4 +1,4 @@
-// Matches file-api's TokenResponse (POST /auth/login) - no user/project info is
+// Matches file-api's TokenResponse (POST /auth/sign-in) - no user/project info is
 // returned at login, only the token. Fetch that separately via GET /users/me.
 export type AuthenticationResponse = {
   access_token: string;
