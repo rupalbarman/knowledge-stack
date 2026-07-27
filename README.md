@@ -56,6 +56,11 @@ Two services, connected via a Redis-backed job queue ([`saq`](https://github.com
   - `cd file-api && uvicorn app.main:main`
   - `cd file-worker && saq worker.main.settings -v`
 - To monitor queues, the dashboard is provided by `SAQ` and can be accessed by navigating to `/monitor`
+- To run the UI
+  - `cd ui`
+  - Ensure `.env` is correctly set (Copy from `.env.example`)
+  - `npm run dev`
+  - Visit `http://localhost:5173`
 
 ## Data storage
 
