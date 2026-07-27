@@ -9,6 +9,7 @@ import { AppLayout, type AppLayoutContext } from "@/layouts/app-layout";
 import { AuthenticatePage } from "@/pages/authenticate-page";
 import { FilePage } from "@/pages/file-page";
 import { SignInPage } from "@/pages/sign-in-page";
+import { SignUpPage } from "@/pages/sign-up-page";
 import { TaskPage } from "@/pages/task-page";
 
 function FilesRoute() {
@@ -24,6 +25,10 @@ const routes = [
   {
     path: "/sign-in",
     element: <SignInPage />,
+  },
+  {
+    path: "/sign-up",
+    element: <SignUpPage />,
   },
   // todo(Rupal): move this to a dedicated 'files' route once we have a different 'home' page
   {

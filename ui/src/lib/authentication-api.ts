@@ -1,19 +1,20 @@
 import type {
   SignInRequest,
-  AuthenticationResponse,
+  SignInResponse,
   SignUpRequest,
+  SignUpResponse,
   SwitchProjectRequest,
 } from "@/common";
 import { api } from "@/lib/api";
 
 export const authenticationApi = {
   signIn(request: SignInRequest) {
-    return api.post<AuthenticationResponse>("/auth/sign-in", request);
+    return api.post<SignInResponse>("/auth/sign-in", request);
   },
   signUp(request: SignUpRequest) {
-    return api.post<AuthenticationResponse>("/auth/sign-up", request);
+    return api.post<SignUpResponse>("/auth/sign-up", request);
   },
   switchProject(request: SwitchProjectRequest) {
-    return api.post<AuthenticationResponse>(`/auth/switch-project`, request);
+    return api.post<SignInResponse>(`/auth/switch-project`, request);
   },
 };
