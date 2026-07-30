@@ -91,6 +91,68 @@ async def sync_file(file_id: UUID, project=Depends(get_current_project)) -> Task
     return TaskOut(**dict(task))
 
 
+@router.put("/{file_id}/content", response_model=FileOut)
+async def replace_file_content(
+    file_id: UUID,
+    file: UploadFile = File(...),
+    project=Depends(get_current_project),
+) -> FileOut:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        existing = await files_repo.get_by_id_in_project(
+            conn, file_id, project["id"]
+        )
+        if existing is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="file not found"
+            )
+
+        # replacing content still uses the same s3 key (project/file)
+        # todo(Rupal): same as create_file/delete_file - storage is written
+        # before the transaction below, so a rollback here would leave the
+        # object updated but the files row still pointing at the old metadata
+        try:
+            size_bytes = await upload_bytes_stream(
+                existing["storage_key"], file, file.content_type
+            )
+        except FileTooLargeError as e:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                detail=str(e),
+            )
+
+        async with conn.transaction():
+            record = await files_repo.update_content(
+                conn,
+                file_id,
+                project["id"],
+                content_type=file.content_type,
+                size_bytes=size_bytes,
+            )
+
+            task_id = uuid4()
+            await tasks_repo.create(
+                conn,
+                task_id,
+                project["id"],
+                file_id,
+                record["name"],
+                task_type="upsert_vectors",
+                reason="replace",
+            )
+            await files_repo.set_latest_task(conn, file_id, task_id)
+
+    # process_file already deletes old chunks before upserting new ones, so
+    # re-running the same pipeline against the new bytes is all that's needed.
+    await queue.enqueue(
+        "process_file",
+        task_id=str(task_id),
+        timeout=settings.process_file_job_timeout_sec,
+    )
+
+    return FileOut(**dict(record), indexing_status="pending")
+
+
 @router.delete("/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_file(file_id: UUID, project=Depends(get_current_project)) -> None:
     pool = get_pool()

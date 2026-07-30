@@ -57,4 +57,22 @@ export const fileHooks = {
       },
     });
   },
+  useReplaceFileContent: () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: ({
+        fileId,
+        file,
+      }: {
+        fileId: string;
+        file: File;
+        folderId: string | null;
+      }) => fileApi.replaceContent(fileId, file),
+      onSuccess: (_data, variables) => {
+        queryClient.invalidateQueries({
+          queryKey: ["files", variables.folderId],
+        });
+      },
+    });
+  },
 };

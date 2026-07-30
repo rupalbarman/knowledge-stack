@@ -1,6 +1,12 @@
-import { useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { Dialog, DropdownMenu } from "radix-ui";
-import { ExternalLink, MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
+import {
+  ExternalLink,
+  FileUp,
+  MoreHorizontal,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 
 import type { FileObject } from "@/common";
 import { fileHooks } from "@/hooks/file-hooks";
@@ -12,9 +18,11 @@ type FileRowActionsProps = {
 
 export function FileRowActions({ file, folderId }: FileRowActionsProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
   const getDownloadUrl = fileHooks.useGetDownloadUrl();
   const syncFile = fileHooks.useSyncFile();
   const deleteFile = fileHooks.useDeleteFile();
+  const replaceFileContent = fileHooks.useReplaceFileContent();
 
   async function handleOpen() {
     const { url } = await getDownloadUrl.mutateAsync(file.id);
@@ -32,8 +40,22 @@ export function FileRowActions({ file, folderId }: FileRowActionsProps) {
     );
   }
 
+  function handleReplaceFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const newFile = event.target.files?.[0];
+    event.target.value = "";
+    if (!newFile) return;
+    replaceFileContent.mutate({ fileId: file.id, file: newFile, folderId });
+  }
+
   return (
     <>
+      <input
+        ref={replaceInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleReplaceFileChange}
+      />
+
       <DropdownMenu.Root>
         <DropdownMenu.Trigger
           className="hover:bg-accent cursor-pointer rounded-md p-1.5"
@@ -61,6 +83,13 @@ export function FileRowActions({ file, folderId }: FileRowActionsProps) {
               <RefreshCw className="size-4" />
               Re-Sync
             </DropdownMenu.Item>
+            <DropdownMenu.Item
+              onSelect={() => replaceInputRef.current?.click()}
+              className="hover:bg-accent flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none"
+            >
+              <FileUp className="size-4" />
+              Replace content
+            </DropdownMenu.Item>
             <DropdownMenu.Separator className="bg-border my-1 h-px" />
             <DropdownMenu.Item
               onSelect={() => setIsDeleteDialogOpen(true)}
@@ -72,6 +101,10 @@ export function FileRowActions({ file, folderId }: FileRowActionsProps) {
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
+
+      {replaceFileContent.isError && (
+        <p className="text-destructive text-xs">Failed to replace file</p>
+      )}
 
       <Dialog.Root
         open={isDeleteDialogOpen}

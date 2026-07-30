@@ -13,7 +13,7 @@ CREATE TABLE tasks (
     file_name TEXT NOT NULL,
     type TEXT NOT NULL DEFAULT 'upsert_vectors'
         CHECK (type IN ('upsert_vectors', 'delete_vectors')),
-    reason TEXT NOT NULL CHECK (reason IN ('upload', 'manual', 'delete')),
+    reason TEXT NOT NULL CHECK (reason IN ('upload', 'manual', 'delete', 'replace')),
     status TEXT NOT NULL DEFAULT 'pending'
         CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'superseded')),
     error TEXT,

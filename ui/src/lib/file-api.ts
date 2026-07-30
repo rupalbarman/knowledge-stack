@@ -22,6 +22,11 @@ export const fileApi = {
   sync(fileId: string) {
     return api.post<TaskObject>(`/files/${fileId}/sync`);
   },
+  replaceContent(fileId: string, file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.upload<FileObject>(`/files/${fileId}/content`, formData, "PUT");
+  },
   delete(fileId: string) {
     return api.delete<void>(`/files/${fileId}`);
   },
