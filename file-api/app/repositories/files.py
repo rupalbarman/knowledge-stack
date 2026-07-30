@@ -73,6 +73,34 @@ async def delete(conn: DBConnection, file_id: UUID, project_id: UUID) -> None:
     )
 
 
+async def update_content(
+    conn: DBConnection,
+    file_id: UUID,
+    project_id: UUID,
+    *,
+    content_type: str | None,
+    size_bytes: int,
+) -> asyncpg.Record:
+    # name/folder_id are untouched - replacing a file's content keeps its
+    # identity in the system, regardless of what the replacement upload
+    # happens to be named locally.
+    record = await conn.fetchrow(
+        """
+        UPDATE files
+        SET content_type = $3, size_bytes = $4
+        WHERE id = $1 AND project_id = $2
+        RETURNING *
+        """,
+        file_id,
+        project_id,
+        content_type,
+        size_bytes,
+    )
+    if not record:
+        raise Exception("Unable to update file")
+    return record
+
+
 async def create(
     conn: DBConnection | asyncpg.pool.PoolConnectionProxy,
     *,
