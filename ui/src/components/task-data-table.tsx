@@ -20,9 +20,42 @@ import {
 } from "lucide-react";
 
 import { DataTableFacetFilter } from "@/components/data-table-facet-filter";
-import type { TaskObject } from "@/common";
+import { StatusPill, type StatusPillInfo } from "@/components/status-pill";
+import type { TaskObject, TaskStatus } from "@/common";
 import { taskHooks } from "@/hooks/task-hooks";
 import { capitalize } from "@/lib/utils";
+
+// Record<TaskStatus, ...> so TS errors if file-api TaskStatus ever
+// gains/loses a value and this falls out of sync.
+const TASK_STATUS_INFO: Record<TaskStatus, StatusPillInfo> = {
+  pending: {
+    label: "Pending",
+    className: "bg-muted text-muted-foreground",
+    explanation: "Queued, waiting to be picked up for processing.",
+  },
+  processing: {
+    label: "Processing",
+    className: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400",
+    explanation: "Currently running.",
+  },
+  completed: {
+    label: "Completed",
+    className:
+      "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400",
+    explanation: "Finished successfully.",
+  },
+  failed: {
+    label: "Failed",
+    className: "bg-destructive/10 text-destructive",
+    explanation: "Something went wrong while running this task.",
+  },
+  superseded: {
+    label: "Superseded",
+    className: "bg-muted text-muted-foreground",
+    explanation:
+      "A newer task for the same file replaced this one before it finished.",
+  },
+};
 
 const columns: ColumnDef<TaskObject>[] = [
   { accessorKey: "file_name", header: "File" },
@@ -35,7 +68,13 @@ const columns: ColumnDef<TaskObject>[] = [
   {
     accessorKey: "status",
     header: "Status",
+    // accessorFn (capitalized text) still drives sorting/faceting - the cell
+    // reads the raw value separately since TASK_STATUS_INFO is keyed by the
+    // lowercase TaskStatus literals, not the capitalized display string.
     accessorFn: (row) => capitalize(row.status),
+    cell: ({ row }) => (
+      <StatusPill info={TASK_STATUS_INFO[row.original.status]} />
+    ),
   },
   {
     accessorKey: "error",

@@ -14,11 +14,7 @@ import {
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
 import { DataTableFacetFilter } from "@/components/data-table-facet-filter";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { StatusPill, type StatusPillInfo } from "@/components/status-pill";
 import type { FileObject, TaskStatus } from "@/common";
 import { fileHooks } from "@/hooks/file-hooks";
 import { cn } from "@/lib/utils";
@@ -59,16 +55,9 @@ function FileTypeBadge({ label }: { label: string }) {
   );
 }
 
-type IndexingStatusInfo = {
-  label: string;
-  className: string;
-  explanation: string;
-};
-
 // Record<TaskStatus, ...> so TS can error if file-api TaskStatus
 // ever gains/loses a value and this falls out of sync.
-// Status values are mapped to human-readable statuses instead
-const INDEXING_STATUS_INFO: Record<TaskStatus, IndexingStatusInfo> = {
+const INDEXING_STATUS_INFO: Record<TaskStatus, StatusPillInfo> = {
   pending: {
     label: "Pending",
     className: "bg-muted text-muted-foreground",
@@ -103,29 +92,17 @@ const INDEXING_STATUS_INFO: Record<TaskStatus, IndexingStatusInfo> = {
   },
 };
 
-const NOT_INDEXED_INFO: IndexingStatusInfo = {
+const NOT_INDEXED_INFO: StatusPillInfo = {
   label: "Not Indexed",
   className: "bg-muted text-muted-foreground",
   explanation: "This file hasn't been queued for indexing yet.",
 };
 
 function IndexingStatusPill({ status }: { status: TaskStatus | null }) {
-  const info = status ? INDEXING_STATUS_INFO[status] : NOT_INDEXED_INFO;
-
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          className={cn(
-            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-            info.className,
-          )}
-        >
-          {info.label}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>{info.explanation}</TooltipContent>
-    </Tooltip>
+    <StatusPill
+      info={status ? INDEXING_STATUS_INFO[status] : NOT_INDEXED_INFO}
+    />
   );
 }
 
