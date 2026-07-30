@@ -14,3 +14,8 @@ export type FileObject = {
   // status value). See file-api FileOut for the full explanation.
   indexing_status: TaskStatus | null;
 };
+
+export type DownloadUrlResponse = {
+  url: string;
+  expires_in: number;
+};

@@ -1,4 +1,4 @@
-import type { FileObject } from "@/common";
+import type { DownloadUrlResponse, FileObject, TaskObject } from "@/common";
 import { api } from "./api";
 
 export const fileApi = {
@@ -15,5 +15,14 @@ export const fileApi = {
       formData.append("folder_id", folderId);
     }
     return api.upload<FileObject>("/files", formData);
+  },
+  getDownloadUrl(fileId: string) {
+    return api.get<DownloadUrlResponse>(`/files/${fileId}/download-url`);
+  },
+  sync(fileId: string) {
+    return api.post<TaskObject>(`/files/${fileId}/sync`);
+  },
+  delete(fileId: string) {
+    return api.delete<void>(`/files/${fileId}`);
   },
 };

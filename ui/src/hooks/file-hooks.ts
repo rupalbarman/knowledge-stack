@@ -26,4 +26,35 @@ export const fileHooks = {
       },
     });
   },
+  // Mutation, not query - fetched fresh on each click rather than cached,
+  // since the URL is only valid for a limited time anyway.
+  useGetDownloadUrl: () => {
+    return useMutation({
+      mutationFn: (fileId: string) => fileApi.getDownloadUrl(fileId),
+    });
+  },
+  useSyncFile: () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: ({ fileId }: { fileId: string; folderId: string | null }) =>
+        fileApi.sync(fileId),
+      onSuccess: (_data, variables) => {
+        queryClient.invalidateQueries({
+          queryKey: ["files", variables.folderId],
+        });
+      },
+    });
+  },
+  useDeleteFile: () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: ({ fileId }: { fileId: string; folderId: string | null }) =>
+        fileApi.delete(fileId),
+      onSuccess: (_data, variables) => {
+        queryClient.invalidateQueries({
+          queryKey: ["files", variables.folderId],
+        });
+      },
+    });
+  },
 };

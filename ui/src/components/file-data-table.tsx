@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -14,6 +14,7 @@ import {
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
 import { DataTableFacetFilter } from "@/components/data-table-facet-filter";
+import { FileRowActions } from "@/components/file-row-actions";
 import { StatusPill, type StatusPillInfo } from "@/components/status-pill";
 import type { FileObject, TaskStatus } from "@/common";
 import { fileHooks } from "@/hooks/file-hooks";
@@ -170,9 +171,26 @@ export function FileDataTable({
       ?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [highlightedFileId]);
 
+  // Appended separately (rather than living in the module-level `columns`)
+  // since it needs folderId, which columns can't close over at module scope.
+  const tableColumns = useMemo<ColumnDef<FileObject>[]>(
+    () => [
+      ...columns,
+      {
+        id: "actions",
+        header: "",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <FileRowActions file={row.original} folderId={folderId} />
+        ),
+      },
+    ],
+    [folderId],
+  );
+
   const table = useReactTable({
     data: data ?? [],
-    columns,
+    columns: tableColumns,
     state: { sorting, columnFilters, columnVisibility },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -213,21 +231,30 @@ export function FileDataTable({
                 key={headerGroup.id}
                 className="border-border border-b text-sm font-medium"
               >
-                {headerGroup.headers.map((header) => (
-                  <th key={header.id} className="px-3 py-2">
-                    <button
-                      type="button"
-                      onClick={header.column.getToggleSortingHandler()}
-                      className="flex items-center gap-1"
-                    >
+                {headerGroup.headers.map((header) =>
+                  header.column.getCanSort() ? (
+                    <th key={header.id} className="px-3 py-2">
+                      <button
+                        type="button"
+                        onClick={header.column.getToggleSortingHandler()}
+                        className="flex items-center gap-1"
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                        <SortIcon direction={header.column.getIsSorted()} />
+                      </button>
+                    </th>
+                  ) : (
+                    <th key={header.id} className="px-3 py-2">
                       {flexRender(
                         header.column.columnDef.header,
                         header.getContext(),
                       )}
-                      <SortIcon direction={header.column.getIsSorted()} />
-                    </button>
-                  </th>
-                ))}
+                    </th>
+                  ),
+                )}
               </tr>
             ))}
           </thead>
