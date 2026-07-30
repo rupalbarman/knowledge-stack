@@ -8,7 +8,7 @@ from app import db, milvus_client
 from app.config import settings
 from app.migrate import run_migrations
 from app.queue import queue
-from app.routers import auth, files, folders, search, tasks, users
+from app.routers import analytics, auth, files, folders, search, tasks, users
 from app.storage import ensure_bucket
 
 
@@ -45,6 +45,7 @@ app.include_router(folders.router)
 app.include_router(files.router)
 app.include_router(tasks.router)
 app.include_router(search.router)
+app.include_router(analytics.router)
 
 
 @app.get("/health")

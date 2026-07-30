@@ -129,6 +129,9 @@ class TaskOut(BaseModel):
     created_at: datetime
     started_at: datetime | None
     completed_at: datetime | None
+    # Set once the task completes - null until then, and not meaningful for
+    # delete_vectors tasks. Check DB schema.
+    nb_chunks: int | None
 
 
 class TaskPage(BaseModel):
@@ -136,3 +139,18 @@ class TaskPage(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class DocumentStatusBreakdown(BaseModel):
+    pending: int
+    processing: int
+    completed: int
+    failed: int
+
+
+class AnalyticsSummary(BaseModel):
+    total_documents: int
+    total_folders: int
+    storage_used_bytes: int
+    total_chunks: int
+    documents_by_status: DocumentStatusBreakdown
