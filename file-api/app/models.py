@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.repositories.tasks import TaskReason, TaskStatus, TaskType
+
 
 class SignInRequest(BaseModel):
     email: str
@@ -75,6 +77,10 @@ class FileOut(BaseModel):
     size_bytes: int
     storage_key: str
     created_at: datetime
+    # Status of the file's latest upsert_vectors task. Nullable here despite
+    # task entity having a not null constraint is to allow for cases where
+    # the task entity is deleted and this field defaults to null. Check DB schema.
+    indexing_status: TaskStatus | None
 
 
 class PresignedUrlOut(BaseModel):
@@ -116,9 +122,9 @@ class TaskOut(BaseModel):
     project_id: UUID
     file_ref: UUID
     file_name: str
-    type: str
-    reason: str
-    status: str
+    type: TaskType
+    reason: TaskReason
+    status: TaskStatus
     error: str | None
     created_at: datetime
     started_at: datetime | None
