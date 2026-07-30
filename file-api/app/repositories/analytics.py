@@ -6,7 +6,7 @@ type DBConnection = asyncpg.Connection | asyncpg.pool.PoolConnectionProxy
 
 
 async def get_summary(conn: DBConnection, project_id: UUID) -> asyncpg.Record:
-    return await conn.fetchrow(
+    record = await conn.fetchrow(
         """
         SELECT
             COUNT(f.id) AS total_documents,
@@ -22,3 +22,6 @@ async def get_summary(conn: DBConnection, project_id: UUID) -> asyncpg.Record:
         """,
         project_id,
     )
+    if not record:
+        raise Exception("unable to fetch analytics summary")
+    return record

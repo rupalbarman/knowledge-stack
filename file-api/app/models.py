@@ -129,8 +129,7 @@ class TaskOut(BaseModel):
     created_at: datetime
     started_at: datetime | None
     completed_at: datetime | None
-    # Set once the task completes - null until then, and not meaningful for
-    # delete_vectors tasks. Check DB schema.
+    # Set once a task completes. Null otherwise. Does not apply to delete task
     nb_chunks: int | None
 
 
