@@ -7,6 +7,7 @@ type DBConnection = asyncpg.Connection | asyncpg.pool.PoolConnectionProxy
 
 TaskType = Literal["upsert_vectors", "delete_vectors"]
 TaskReason = Literal["upload", "manual", "delete"]
+TaskStatus = Literal["pending", "processing", "completed", "failed", "superseded"]
 
 
 async def create(

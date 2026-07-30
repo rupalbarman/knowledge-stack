@@ -9,7 +9,12 @@ async def get_by_id_in_project(
     conn: DBConnection, file_id: UUID, project_id: UUID
 ) -> asyncpg.Record | None:
     return await conn.fetchrow(
-        "SELECT * FROM files WHERE id = $1 AND project_id = $2",
+        """
+        SELECT f.*, t.status AS indexing_status
+        FROM files f
+        LEFT JOIN tasks t ON t.id = f.latest_task_id
+        WHERE f.id = $1 AND f.project_id = $2
+        """,
         file_id,
         project_id,
     )
@@ -20,9 +25,11 @@ async def list_by_folder(
 ) -> list[asyncpg.Record]:
     return await conn.fetch(
         """
-        SELECT * FROM files
-        WHERE project_id = $1 AND folder_id IS NOT DISTINCT FROM $2
-        ORDER BY name
+        SELECT f.*, t.status AS indexing_status
+        FROM files f
+        LEFT JOIN tasks t ON t.id = f.latest_task_id
+        WHERE f.project_id = $1 AND f.folder_id IS NOT DISTINCT FROM $2
+        ORDER BY f.name
         """,
         project_id,
         folder_id,

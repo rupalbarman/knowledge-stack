@@ -14,7 +14,8 @@ import {
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
 import { DataTableFacetFilter } from "@/components/data-table-facet-filter";
-import type { FileObject } from "@/common";
+import { StatusPill, type StatusPillInfo } from "@/components/status-pill";
+import type { FileObject, TaskStatus } from "@/common";
 import { fileHooks } from "@/hooks/file-hooks";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +55,57 @@ function FileTypeBadge({ label }: { label: string }) {
   );
 }
 
+// Record<TaskStatus, ...> so TS can error if file-api TaskStatus
+// ever gains/loses a value and this falls out of sync.
+const INDEXING_STATUS_INFO: Record<TaskStatus, StatusPillInfo> = {
+  pending: {
+    label: "Pending",
+    className: "bg-muted text-muted-foreground",
+    explanation:
+      "Queued for indexing. It will become searchable once processing starts.",
+  },
+  processing: {
+    label: "Processing",
+    className: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400",
+    explanation:
+      "Currently being processed. It will become searchable shortly.",
+  },
+  completed: {
+    label: "Indexed",
+    className:
+      "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400",
+    explanation: "This file has been processed and its content is searchable.",
+  },
+  failed: {
+    label: "Failed",
+    className: "bg-destructive/10 text-destructive",
+    explanation:
+      "Something went wrong while indexing this file. Try syncing it again.",
+  },
+  // Shouldn't occur for a file's latest task (latest_task_id
+  // only ever points at the newest constructive task), but TaskStatus allows
+  // it, so it needs a real entry rather than an unsafe fallback.
+  superseded: {
+    label: "Superseded",
+    className: "bg-muted text-muted-foreground",
+    explanation: "This indexing attempt was replaced by a newer one.",
+  },
+};
+
+const NOT_INDEXED_INFO: StatusPillInfo = {
+  label: "Not Indexed",
+  className: "bg-muted text-muted-foreground",
+  explanation: "This file hasn't been queued for indexing yet.",
+};
+
+function IndexingStatusPill({ status }: { status: TaskStatus | null }) {
+  return (
+    <StatusPill
+      info={status ? INDEXING_STATUS_INFO[status] : NOT_INDEXED_INFO}
+    />
+  );
+}
+
 const columns: ColumnDef<FileObject>[] = [
   {
     // Filter/facet-only column, hidden via columnVisibility below - drives
@@ -70,6 +122,13 @@ const columns: ColumnDef<FileObject>[] = [
         <FileTypeBadge label={row.getValue<string>("extension")} />
         <span>{row.original.name}</span>
       </div>
+    ),
+  },
+  {
+    accessorKey: "indexing_status",
+    header: "Status",
+    cell: ({ getValue }) => (
+      <IndexingStatusPill status={getValue<TaskStatus | null>()} />
     ),
   },
   {

@@ -202,4 +202,6 @@ async def create_file(
         timeout=settings.process_file_job_timeout_sec,
     )
 
-    return FileOut(**dict(record))
+    # Newly inserted file will create a new task entity which defaults to "pending"
+    # status. So we can guarantee the status here without having to query or join with associated task.
+    return FileOut(**dict(record), indexing_status="pending")
