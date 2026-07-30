@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -16,6 +16,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { DataTableFacetFilter } from "@/components/data-table-facet-filter";
 import type { FileObject } from "@/common";
 import { fileHooks } from "@/hooks/file-hooks";
+import { cn } from "@/lib/utils";
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -91,13 +92,24 @@ function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
 
 type FileDataTableProps = {
   folderId: string | null;
+  highlightedFileId?: string | null;
 };
 
-export function FileDataTable({ folderId }: FileDataTableProps) {
+export function FileDataTable({
+  folderId,
+  highlightedFileId,
+}: FileDataTableProps) {
   const { data, isLoading, isError } = fileHooks.useFilesByFolder(folderId);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility] = useState<VisibilityState>({ extension: false });
+
+  useEffect(() => {
+    if (!highlightedFileId) return;
+    document
+      .querySelector(`[data-file-id="${highlightedFileId}"]`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlightedFileId]);
 
   const table = useReactTable({
     data: data ?? [],
@@ -162,7 +174,14 @@ export function FileDataTable({ folderId }: FileDataTableProps) {
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.id} className="border-border border-b">
+              <tr
+                key={row.id}
+                data-file-id={row.original.id}
+                className={cn(
+                  "border-border border-b transition-colors duration-1000",
+                  row.original.id === highlightedFileId && "bg-primary/10",
+                )}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}

@@ -6,9 +6,10 @@ import { searchHooks } from "@/hooks/search-hooks";
 
 type SearchBoxProps = {
   folderId: string | null;
+  onHighlightFile: (fileId: string) => void;
 };
 
-export function SearchBox({ folderId }: SearchBoxProps) {
+export function SearchBox({ folderId, onHighlightFile }: SearchBoxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const search = searchHooks.useSearch();
@@ -20,12 +21,21 @@ export function SearchBox({ folderId }: SearchBoxProps) {
     search.mutate({ query: trimmed, folderId });
   }
 
+  // Every hit is already in the currently-viewed folder (search is scoped by
+  // folder_id server-side), so the file is already loaded in FileDataTable -
+  // just close the dialog and point at it there instead of fetching/opening
+  // the file directly.
+  function handleHitClick(fileId: string) {
+    setIsOpen(false);
+    onHighlightFile(fileId);
+  }
+
   return (
     <>
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="border-border text-muted-foreground hover:bg-accent flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm"
+        className="border-border text-muted-foreground hover:bg-accent flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm"
       >
         <Search className="size-4" />
         Search
@@ -50,7 +60,7 @@ export function SearchBox({ folderId }: SearchBoxProps) {
               <button
                 type="submit"
                 disabled={search.isPending}
-                className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
+                className="bg-primary text-primary-foreground cursor-pointer rounded-md px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {search.isPending ? "Searching..." : "Search"}
               </button>
@@ -68,15 +78,17 @@ export function SearchBox({ folderId }: SearchBoxProps) {
                   <p className="text-muted-foreground text-sm">No results</p>
                 ) : (
                   search.data.hits.map((hit, index) => (
-                    <div
+                    <button
                       key={`${hit.file_id}-${hit.chunk_index}-${index}`}
-                      className="border-border rounded-md border p-3"
+                      type="button"
+                      onClick={() => handleHitClick(hit.file_id)}
+                      className="border-border hover:bg-accent block w-full cursor-pointer rounded-md border p-3 text-left"
                     >
                       <p className="text-muted-foreground text-xs font-medium">
                         {hit.file_name}
                       </p>
                       <p className="mt-1 text-sm">{hit.text}</p>
-                    </div>
+                    </button>
                   ))
                 )}
               </div>
