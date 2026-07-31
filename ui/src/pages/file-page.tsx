@@ -5,6 +5,7 @@ import { FileDataTable } from '@/components/file-data-table'
 import { PageBody } from '@/components/page-body'
 import { PageHeader } from '@/components/page-header'
 import { SearchBox } from '@/components/search-box'
+import { fileHooks } from '@/hooks/file-hooks'
 
 type FilePageProps = {
   folderId: string | null
@@ -14,6 +15,7 @@ export function FilePage({ folderId }: FilePageProps) {
   const [highlightedFileId, setHighlightedFileId] = useState<string | null>(
     null,
   )
+  const { data, isLoading, isError } = fileHooks.useFilesByFolder(folderId)
 
   function handleHighlightFile(fileId: string) {
     setHighlightedFileId(fileId)
@@ -34,7 +36,12 @@ export function FilePage({ folderId }: FilePageProps) {
         }
       />
       <PageBody>
-        <FileDataTable folderId={folderId} highlightedFileId={highlightedFileId} />
+        <FileDataTable
+          data={data}
+          isLoading={isLoading}
+          isError={isError}
+          highlightedFileId={highlightedFileId}
+        />
       </PageBody>
     </div>
   )

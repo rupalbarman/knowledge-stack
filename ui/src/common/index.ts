@@ -6,4 +6,5 @@ export * from "./folder";
 export * from "./file";
 export * from "./task";
 export * from "./analytics";
+export * from "./pagination";
 export * from "./search";

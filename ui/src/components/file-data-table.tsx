@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -11,13 +11,16 @@ import {
   type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+} from "lucide-react";
 
 import { DataTableFacetFilter } from "@/components/data-table-facet-filter";
 import { FileRowActions } from "@/components/file-row-actions";
 import { StatusPill, type StatusPillInfo } from "@/components/status-pill";
 import type { FileObject, TaskStatus } from "@/common";
-import { fileHooks } from "@/hooks/file-hooks";
 import { cn, formatBytes } from "@/lib/utils";
 
 // Show file icons as badges denoting their extension instead of MIME type
@@ -98,7 +101,10 @@ function IndexingStatusPill({ status }: { status: TaskStatus | null }) {
 const columns: ColumnDef<FileObject>[] = [
   {
     // Filter/facet-only column, hidden via columnVisibility below - drives
-    // the extension pill row
+    // the extension pill row. Faceting and sorting below only see the
+    // currently loaded page - /files has no order_by (for sorting) or
+    // extension (for filtering) query param yet, same caveat as
+    // TaskDataTable's status facet.
     id: "extension",
     accessorFn: (row) => getFileTypeLabel(row.name, row.content_type),
     header: "Type",
@@ -130,6 +136,12 @@ const columns: ColumnDef<FileObject>[] = [
     header: "Created",
     cell: ({ getValue }) => new Date(getValue<string>()).toLocaleString(),
   },
+  {
+    id: "actions",
+    header: "",
+    enableSorting: false,
+    cell: ({ row }) => <FileRowActions file={row.original} />,
+  },
 ];
 
 function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
@@ -139,15 +151,18 @@ function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
 }
 
 type FileDataTableProps = {
-  folderId: string | null;
+  data: FileObject[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
   highlightedFileId?: string | null;
 };
 
 export function FileDataTable({
-  folderId,
+  data,
+  isLoading,
+  isError,
   highlightedFileId,
 }: FileDataTableProps) {
-  const { data, isLoading, isError } = fileHooks.useFilesByFolder(folderId);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility] = useState<VisibilityState>({ extension: false });
@@ -159,26 +174,9 @@ export function FileDataTable({
       ?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [highlightedFileId]);
 
-  // Appended separately (rather than living in the module-level `columns`)
-  // since it needs folderId, which columns can't close over at module scope.
-  const tableColumns = useMemo<ColumnDef<FileObject>[]>(
-    () => [
-      ...columns,
-      {
-        id: "actions",
-        header: "",
-        enableSorting: false,
-        cell: ({ row }) => (
-          <FileRowActions file={row.original} folderId={folderId} />
-        ),
-      },
-    ],
-    [folderId],
-  );
-
   const table = useReactTable({
     data: data ?? [],
-    columns: tableColumns,
+    columns,
     state: { sorting, columnFilters, columnVisibility },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,

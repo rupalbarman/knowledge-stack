@@ -1,4 +1,4 @@
-import type { DownloadUrlResponse, FileObject, TaskObject } from "@/common";
+import type { DownloadUrlResponse, FileObject, Page, TaskObject } from "@/common";
 import { api } from "./api";
 
 export const fileApi = {
@@ -7,6 +7,9 @@ export const fileApi = {
       "/files",
       folderId ? { folder_id: folderId } : undefined,
     );
+  },
+  listRecent(limit: number, offset: number) {
+    return api.get<Page<FileObject>>("/files/recent", { limit, offset });
   },
   upload(file: File, folderId: string | null) {
     const formData = new FormData();
