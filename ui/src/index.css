@@ -5,17 +5,17 @@
 
 :root {
     --radius: 0.625rem;
-    --background: oklch(1 0 0);
+    /* Light-mode palette matched to the design mock - page background sits a
+     hair below pure white so the white cards read as raised. --primary/--ring
+     are the indigo brand color used for filled buttons, badges, and focus
+     rings in the mock; everything else is neutral gray. */
+    --background: oklch(0.985 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
-    /* Placeholder accent - swap for the real brand display.
-     Everything that wants to look "on brand" (primary buttons, selected
-     states, focus rings) reads --primary/--ring, so this is the only pair
-     that needs to change. */
-    --primary: oklch(0.55 0.2 265);
+    --primary: oklch(0.54 0.24 276);
     --primary-foreground: oklch(0.985 0 0);
     --secondary: oklch(0.97 0 0);
     --secondary-foreground: oklch(0.205 0 0);
@@ -24,9 +24,9 @@
     --accent: oklch(0.97 0 0);
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.55 0.2 265);
+    --border: oklch(0.93 0 0);
+    --input: oklch(0.93 0 0);
+    --ring: oklch(0.54 0.24 276);
 }
 
 .dark {
