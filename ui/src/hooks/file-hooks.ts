@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { ANALYTICS_SUMMARY_KEY } from "@/hooks/analytics-hooks";
 import { fileApi } from "@/lib/file-api";
 
 export const fileHooks = {
@@ -23,6 +24,7 @@ export const fileHooks = {
         queryClient.invalidateQueries({
           queryKey: ["files", variables.folderId],
         });
+        queryClient.invalidateQueries({ queryKey: ANALYTICS_SUMMARY_KEY });
       },
     });
   },
@@ -42,6 +44,7 @@ export const fileHooks = {
         queryClient.invalidateQueries({
           queryKey: ["files", variables.folderId],
         });
+        queryClient.invalidateQueries({ queryKey: ANALYTICS_SUMMARY_KEY });
       },
     });
   },
@@ -54,6 +57,7 @@ export const fileHooks = {
         queryClient.invalidateQueries({
           queryKey: ["files", variables.folderId],
         });
+        queryClient.invalidateQueries({ queryKey: ANALYTICS_SUMMARY_KEY });
       },
     });
   },
@@ -72,6 +76,7 @@ export const fileHooks = {
         queryClient.invalidateQueries({
           queryKey: ["files", variables.folderId],
         });
+        queryClient.invalidateQueries({ queryKey: ANALYTICS_SUMMARY_KEY });
       },
     });
   },

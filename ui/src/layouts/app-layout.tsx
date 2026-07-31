@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ListTodo } from 'lucide-react'
+import { Files, ListTodo } from 'lucide-react'
 import { Outlet, useNavigate } from 'react-router-dom'
 
 import { FolderTree } from '@/components/folder-tree'
@@ -22,12 +22,18 @@ export function AppLayout() {
   // Jump to relevant files page of the selected folder
   function handleSelectFolder(folderId: string | null) {
     setSelectedFolderId(folderId)
-    navigate('/')
+    navigate('/files')
   }
 
   return (
     <div className="flex h-screen">
       <Sidebar>
+        <SidebarButton
+          icon={<Files className="size-4 shrink-0" />}
+          label="Files"
+          onClick={() => handleSelectFolder(null)}
+        />
+
         <SidebarSection title="Folders">
           <FolderTree
             selectedFolderId={selectedFolderId}

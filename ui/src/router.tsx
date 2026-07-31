@@ -8,6 +8,7 @@ import { RequireAuth } from "@/guards/require-auth";
 import { AppLayout, type AppLayoutContext } from "@/layouts/app-layout";
 import { AuthenticatePage } from "@/pages/authenticate-page";
 import { FilePage } from "@/pages/file-page";
+import { HomePage } from "@/pages/home-page";
 import { SignInPage } from "@/pages/sign-in-page";
 import { SignUpPage } from "@/pages/sign-up-page";
 import { TaskPage } from "@/pages/task-page";
@@ -30,7 +31,6 @@ const routes = [
     path: "/sign-up",
     element: <SignUpPage />,
   },
-  // todo(Rupal): move this to a dedicated 'files' route once we have a different 'home' page
   {
     path: "/",
     element: (
@@ -39,7 +39,8 @@ const routes = [
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <FilesRoute /> },
+      { index: true, element: <HomePage /> },
+      { path: "files", element: <FilesRoute /> },
       { path: "tasks", element: <TaskPage /> },
     ],
   },

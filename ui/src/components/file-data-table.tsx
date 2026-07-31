@@ -18,19 +18,7 @@ import { FileRowActions } from "@/components/file-row-actions";
 import { StatusPill, type StatusPillInfo } from "@/components/status-pill";
 import type { FileObject, TaskStatus } from "@/common";
 import { fileHooks } from "@/hooks/file-hooks";
-import { cn } from "@/lib/utils";
-
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ["KB", "MB", "GB"];
-  let value = bytes / 1024;
-  let unitIndex = 0;
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex += 1;
-  }
-  return `${value.toFixed(1)} ${units[unitIndex]}`;
-}
+import { cn, formatBytes } from "@/lib/utils";
 
 // Show file icons as badges denoting their extension instead of MIME type
 // Fallback to using MIME type if no extension is present
