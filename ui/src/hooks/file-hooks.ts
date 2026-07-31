@@ -1,12 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { ANALYTICS_SUMMARY_KEY } from "@/hooks/analytics-hooks";
 import { fileApi } from "@/lib/file-api";
+
+// Invalidates every file listing (folder-scoped and recent alike - both
+// query keys start with "files") rather than a single folderId, since a
+// mutated file may be visible in more than one of these views at once.
+function invalidateFileLists(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ["files"] });
+  queryClient.invalidateQueries({ queryKey: ANALYTICS_SUMMARY_KEY });
+}
 
 export const fileHooks = {
   useFilesByFolder: (folderId: string | null) => {
     return useQuery({
       queryKey: ["files", folderId],
       queryFn: () => fileApi.listByFolder(folderId),
+    });
+  },
+  useRecentFiles: (limit: number, offset = 0) => {
+    return useQuery({
+      queryKey: ["files", "recent", limit, offset],
+      queryFn: () => fileApi.listRecent(limit, offset),
     });
   },
   useUploadFile: () => {
@@ -19,11 +34,7 @@ export const fileHooks = {
         file: File;
         folderId: string | null;
       }) => fileApi.upload(file, folderId),
-      onSuccess: (_data, variables) => {
-        queryClient.invalidateQueries({
-          queryKey: ["files", variables.folderId],
-        });
-      },
+      onSuccess: () => invalidateFileLists(queryClient),
     });
   },
   // Mutation, not query - fetched fresh on each click rather than cached,
@@ -36,43 +47,23 @@ export const fileHooks = {
   useSyncFile: () => {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: ({ fileId }: { fileId: string; folderId: string | null }) =>
-        fileApi.sync(fileId),
-      onSuccess: (_data, variables) => {
-        queryClient.invalidateQueries({
-          queryKey: ["files", variables.folderId],
-        });
-      },
+      mutationFn: (fileId: string) => fileApi.sync(fileId),
+      onSuccess: () => invalidateFileLists(queryClient),
     });
   },
   useDeleteFile: () => {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: ({ fileId }: { fileId: string; folderId: string | null }) =>
-        fileApi.delete(fileId),
-      onSuccess: (_data, variables) => {
-        queryClient.invalidateQueries({
-          queryKey: ["files", variables.folderId],
-        });
-      },
+      mutationFn: (fileId: string) => fileApi.delete(fileId),
+      onSuccess: () => invalidateFileLists(queryClient),
     });
   },
   useReplaceFileContent: () => {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: ({
-        fileId,
-        file,
-      }: {
-        fileId: string;
-        file: File;
-        folderId: string | null;
-      }) => fileApi.replaceContent(fileId, file),
-      onSuccess: (_data, variables) => {
-        queryClient.invalidateQueries({
-          queryKey: ["files", variables.folderId],
-        });
-      },
+      mutationFn: ({ fileId, file }: { fileId: string; file: File }) =>
+        fileApi.replaceContent(fileId, file),
+      onSuccess: () => invalidateFileLists(queryClient),
     });
   },
 };

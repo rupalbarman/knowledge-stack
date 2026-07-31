@@ -70,6 +70,12 @@ async def list_ancestors(
     )
 
 
+async def count_by_project_id(conn: DBConnection, project_id: UUID) -> int:
+    return await conn.fetchval(
+        "SELECT COUNT(*) FROM folders WHERE project_id = $1", project_id
+    )
+
+
 async def list_all(conn: DBConnection, project_id: UUID) -> list[asyncpg.Record]:
     return await conn.fetch(
         "SELECT id, parent_id, name FROM folders WHERE project_id = $1 ORDER BY name",

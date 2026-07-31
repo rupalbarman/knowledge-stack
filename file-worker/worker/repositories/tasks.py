@@ -46,10 +46,13 @@ async def mark_processing_batch(conn: DBConnection, task_ids: list[UUID]) -> Non
     )
 
 
-async def mark_completed(conn: DBConnection, task_id: UUID) -> None:
+async def mark_completed(
+    conn: DBConnection, task_id: UUID, nb_chunks: int | None = None
+) -> None:
     await conn.execute(
-        "UPDATE tasks SET status = 'completed', completed_at = now() WHERE id = $1",
+        "UPDATE tasks SET status = 'completed', completed_at = now(), nb_chunks = $2 WHERE id = $1",
         task_id,
+        nb_chunks,
     )
 
 

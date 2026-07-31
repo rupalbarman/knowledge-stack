@@ -137,6 +137,6 @@ async def process_file(ctx: dict, *, task_id: str) -> dict:
         raise
 
     async with pool.acquire() as conn:
-        await tasks_repo.mark_completed(conn, task_uuid)
+        await tasks_repo.mark_completed(conn, task_uuid, nb_chunks=len(chunks))
 
     return {"task_id": task_id, "status": "completed", "chunks": len(chunks)}

@@ -13,10 +13,9 @@ import { fileHooks } from "@/hooks/file-hooks";
 
 type FileRowActionsProps = {
   file: FileObject;
-  folderId: string | null;
 };
 
-export function FileRowActions({ file, folderId }: FileRowActionsProps) {
+export function FileRowActions({ file }: FileRowActionsProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const getDownloadUrl = fileHooks.useGetDownloadUrl();
@@ -30,21 +29,20 @@ export function FileRowActions({ file, folderId }: FileRowActionsProps) {
   }
 
   function handleSync() {
-    syncFile.mutate({ fileId: file.id, folderId });
+    syncFile.mutate(file.id);
   }
 
   function handleDelete() {
-    deleteFile.mutate(
-      { fileId: file.id, folderId },
-      { onSuccess: () => setIsDeleteDialogOpen(false) },
-    );
+    deleteFile.mutate(file.id, {
+      onSuccess: () => setIsDeleteDialogOpen(false),
+    });
   }
 
   function handleReplaceFileChange(event: ChangeEvent<HTMLInputElement>) {
     const newFile = event.target.files?.[0];
     event.target.value = "";
     if (!newFile) return;
-    replaceFileContent.mutate({ fileId: file.id, file: newFile, folderId });
+    replaceFileContent.mutate({ fileId: file.id, file: newFile });
   }
 
   return (

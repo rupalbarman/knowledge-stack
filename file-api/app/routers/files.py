@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from app.config import settings
 from app.db import get_pool
 from app.dependencies import get_current_project
-from app.models import FileOut, PresignedUrlOut, TaskOut
+from app.models import FileOut, Page, PresignedUrlOut, TaskOut
 from app.queue import queue
 from app.repositories import files as files_repo
 from app.repositories import folders as folders_repo
@@ -20,6 +20,8 @@ from app.storage import (
 
 router = APIRouter(prefix="/files", tags=["files"])
 
+RECENT_FILES_LIMIT = 50
+
 
 @router.get("", response_model=list[FileOut])
 async def list_files(
@@ -29,6 +31,36 @@ async def list_files(
     async with pool.acquire() as conn:
         rows = await files_repo.list_by_folder(conn, project["id"], folder_id)
     return [FileOut(**dict(row)) for row in rows]
+
+
+@router.get("/recent", response_model=Page[FileOut])
+async def list_recent_files(
+    limit: int = RECENT_FILES_LIMIT,
+    offset: int = 0,
+    project=Depends(get_current_project),
+) -> Page[FileOut]:
+    if offset < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="offset must be >= 0",
+        )
+
+    if limit <= 0 or limit > RECENT_FILES_LIMIT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"limit must be >= 0 and <= {RECENT_FILES_LIMIT}",
+        )
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        rows = await files_repo.list_recent(conn, project["id"], limit, offset)
+        total = await files_repo.count_by_project_and_folder_id(conn, project["id"])
+    return Page[FileOut](
+        items=[FileOut(**dict(row)) for row in rows],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/{file_id}", response_model=FileOut)
@@ -99,9 +131,7 @@ async def replace_file_content(
 ) -> FileOut:
     pool = get_pool()
     async with pool.acquire() as conn:
-        existing = await files_repo.get_by_id_in_project(
-            conn, file_id, project["id"]
-        )
+        existing = await files_repo.get_by_id_in_project(conn, file_id, project["id"])
         if existing is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="file not found"
