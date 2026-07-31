@@ -1,13 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
-  type ColumnFiltersState,
   type PaginationState,
   type SortingState,
 } from "@tanstack/react-table";
@@ -19,11 +16,10 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-import { DataTableFacetFilter } from "@/components/data-table-facet-filter";
 import { StatusPill, type StatusPillInfo } from "@/components/status-pill";
 import type { TaskObject, TaskStatus } from "@/common";
 import { taskHooks } from "@/hooks/task-hooks";
-import { capitalize } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils";
 
 // Record<TaskStatus, ...> so TS errors if file-api TaskStatus ever
 // gains/loses a value and this falls out of sync.
@@ -68,9 +64,11 @@ const columns: ColumnDef<TaskObject>[] = [
   {
     accessorKey: "status",
     header: "Status",
-    // accessorFn (capitalized text) still drives sorting/faceting - the cell
-    // reads the raw value separately since TASK_STATUS_INFO is keyed by the
-    // lowercase TaskStatus literals, not the capitalized display string.
+    // accessorFn (capitalized text) drives sorting (still client-side,
+    // current-page-only) - the cell reads the raw value separately since
+    // TASK_STATUS_INFO is keyed by the lowercase TaskStatus literals, not the
+    // capitalized display string. Filtering by status is server-side (see
+    // the facet buttons below), not driven by this column at all.
     accessorFn: (row) => capitalize(row.status),
     cell: ({ row }) => (
       <StatusPill info={TASK_STATUS_INFO[row.original.status]} />
@@ -100,14 +98,22 @@ type TaskDataTableProps = {
 
 export function TaskDataTable({ fileId }: TaskDataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [selectedStatus, setSelectedStatus] = useState<TaskStatus>();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: 20,
+    pageSize: 50,
   });
+
+  // Reset to the first page whenever the status filter changes - otherwise
+  // picking a filter while on, say, page 3 could request an offset that
+  // doesn't exist within the filtered result set.
+  useEffect(() => {
+    setPagination((p) => ({ ...p, pageIndex: 0 }));
+  }, [selectedStatus]);
 
   const { data, isLoading, isError } = taskHooks.useTasks({
     fileId,
+    status: selectedStatus,
     limit: pagination.pageSize,
     offset: pagination.pageIndex * pagination.pageSize,
   });
@@ -117,21 +123,19 @@ export function TaskDataTable({ fileId }: TaskDataTableProps) {
   const table = useReactTable({
     data: data?.items ?? [],
     columns,
-    state: { sorting, columnFilters, pagination },
+    state: { sorting, pagination },
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     onPaginationChange: setPagination,
-    // The API paginates server-side (limit/offset) - manualPagination tells
-    // react-table not to slice the data itself, just track the state.
+    // The API paginates and filters by status server-side - manualPagination
+    // tells react-table not to slice the data itself, just track the state,
+    // and manualFiltering confirms there's no client-side filterFn to run.
     manualPagination: true,
+    manualFiltering: true,
     pageCount,
     getCoreRowModel: getCoreRowModel(),
-    // Sorting and the status filter below only see the currently loaded page
-    // - /tasks has no order_by or status query param, so both are scoped to
-    // "within this page" until the backend supports them server-side.
+    // Sorting still only sees the currently loaded page - /tasks has no
+    // order_by query param yet.
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
   if (isLoading) {
@@ -142,21 +146,35 @@ export function TaskDataTable({ fileId }: TaskDataTableProps) {
     return <p className="text-destructive text-sm">Failed to load tasks.</p>;
   }
 
-  if (!data || data.items.length === 0) {
-    return <p className="text-muted-foreground text-sm">No tasks</p>;
-  }
-
-  const statusColumn = table.getColumn("status");
   const rows = table.getRowModel().rows;
-  const isFiltered = columnFilters.length > 0;
 
   return (
     <div className="space-y-3">
-      {statusColumn && <DataTableFacetFilter column={statusColumn} />}
+      <div className="flex flex-wrap gap-2">
+        {(Object.entries(TASK_STATUS_INFO) as [TaskStatus, StatusPillInfo][]).map(
+          ([value, info]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() =>
+                setSelectedStatus(selectedStatus === value ? undefined : value)
+              }
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium",
+                selectedStatus === value
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-foreground hover:bg-accent",
+              )}
+            >
+              {info.label}
+            </button>
+          ),
+        )}
+      </div>
 
-      {rows.length === 0 ? (
+      {!data || data.items.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          No tasks match this filter
+          {selectedStatus ? "No tasks match this filter" : "No tasks"}
         </p>
       ) : (
         <table className="w-full text-left">
@@ -203,9 +221,7 @@ export function TaskDataTable({ fileId }: TaskDataTableProps) {
 
       <div className="flex items-center justify-end gap-3 text-sm">
         <span className="text-muted-foreground">
-          {isFiltered ? (
-            `${rows.length} matching on this page`
-          ) : (
+          {data && data.items.length > 0 && (
             <>
               {pagination.pageIndex * pagination.pageSize + 1}-
               {Math.min(

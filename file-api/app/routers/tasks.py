@@ -1,11 +1,12 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.db import get_pool
 from app.dependencies import get_current_project
 from app.models import Page, TaskOut
 from app.repositories import tasks as tasks_repo
+from app.repositories.tasks import TaskStatus
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -15,6 +16,7 @@ LIMIT = 100
 @router.get("", response_model=Page[TaskOut])
 async def list_tasks(
     file_id: UUID | None = None,
+    status_filter: TaskStatus | None = Query(None, alias="status"),
     limit: int = LIMIT,
     offset: int = 0,
     project=Depends(get_current_project),
@@ -37,10 +39,13 @@ async def list_tasks(
             conn,
             project["id"],
             file_id,
+            status_filter,
             limit,
             offset,
         )
-        total = await tasks_repo.count_by_project_id(conn, project["id"], file_id)
+        total = await tasks_repo.count_by_project_id(
+            conn, project["id"], file_id, status_filter
+        )
 
     return Page[TaskOut](
         items=[TaskOut(**dict(row)) for row in rows],

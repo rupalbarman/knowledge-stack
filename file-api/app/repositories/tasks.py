@@ -66,50 +66,55 @@ async def create_batch(
     )
 
 
+def _build_filters(
+    project_id: UUID, file_id: UUID | None, status: TaskStatus | None
+) -> tuple[str, list]:
+    """Shared between list_by_project_id/count_by_project_id - both filter on
+    the same optional (file_id, status) pair, only the rest of the query
+    differs. Placeholder count varies with which filters are present, but
+    every value is still a bound param - no string-built SQL values."""
+    conditions = ["project_id = $1"]
+    params: list = [project_id]
+
+    if file_id is not None:
+        params.append(file_id)
+        conditions.append(f"file_ref = ${len(params)}")
+
+    if status is not None:
+        params.append(status)
+        conditions.append(f"status = ${len(params)}")
+
+    return " AND ".join(conditions), params
+
+
 async def list_by_project_id(
     conn: DBConnection,
     project_id: UUID,
     file_id: UUID | None,
+    status: TaskStatus | None,
     limit: int,
     offset: int,
 ) -> list[asyncpg.Record]:
-    if file_id is not None:
-        return await conn.fetch(
-            """
-            SELECT * FROM tasks
-            WHERE project_id = $1 AND file_ref = $2
-            ORDER BY created_at DESC
-            LIMIT $3 OFFSET $4
-            """,
-            project_id,
-            file_id,
-            limit,
-            offset,
-        )
-
+    where_clause, params = _build_filters(project_id, file_id, status)
+    params.extend([limit, offset])
     return await conn.fetch(
-        """
+        f"""
         SELECT * FROM tasks
-        WHERE project_id = $1
+        WHERE {where_clause}
         ORDER BY created_at DESC
-        LIMIT $2 OFFSET $3
+        LIMIT ${len(params) - 1} OFFSET ${len(params)}
         """,
-        project_id,
-        limit,
-        offset,
+        *params,
     )
 
 
 async def count_by_project_id(
-    conn: DBConnection, project_id: UUID, file_id: UUID | None
+    conn: DBConnection,
+    project_id: UUID,
+    file_id: UUID | None,
+    status: TaskStatus | None,
 ) -> int:
-    if file_id is not None:
-        return await conn.fetchval(
-            "SELECT COUNT(*) FROM tasks WHERE project_id = $1 AND file_ref = $2",
-            project_id,
-            file_id,
-        )
-
+    where_clause, params = _build_filters(project_id, file_id, status)
     return await conn.fetchval(
-        "SELECT COUNT(*) FROM tasks WHERE project_id = $1", project_id
-    )
+        f"SELECT COUNT(*) FROM tasks WHERE {where_clause}", *params
+    ) or 0
