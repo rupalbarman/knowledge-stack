@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.db import get_pool
 from app.dependencies import get_current_project
-from app.models import TaskOut, TaskPage
+from app.models import Page, TaskOut
 from app.repositories import tasks as tasks_repo
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -12,13 +12,13 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 LIMIT = 100
 
 
-@router.get("", response_model=TaskPage)
+@router.get("", response_model=Page[TaskOut])
 async def list_tasks(
     file_id: UUID | None = None,
     limit: int = LIMIT,
     offset: int = 0,
     project=Depends(get_current_project),
-) -> TaskPage:
+) -> Page[TaskOut]:
     if offset < 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -42,7 +42,7 @@ async def list_tasks(
         )
         total = await tasks_repo.count_by_project_id(conn, project["id"], file_id)
 
-    return TaskPage(
+    return Page[TaskOut](
         items=[TaskOut(**dict(row)) for row in rows],
         total=total,
         limit=limit,

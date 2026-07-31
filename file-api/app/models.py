@@ -1,10 +1,19 @@
 from datetime import datetime
-from typing import Literal
+from typing import Generic, Literal, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel
 
 from app.repositories.tasks import TaskReason, TaskStatus, TaskType
+
+T = TypeVar("T")
+
+
+class Page(BaseModel, Generic[T]):
+    items: list[T]
+    total: int
+    limit: int
+    offset: int
 
 
 class SignInRequest(BaseModel):
@@ -131,13 +140,6 @@ class TaskOut(BaseModel):
     completed_at: datetime | None
     # Set once a task completes. Null otherwise. Does not apply to delete task
     nb_chunks: int | None
-
-
-class TaskPage(BaseModel):
-    items: list[TaskOut]
-    total: int
-    limit: int
-    offset: int
 
 
 class DocumentStatusBreakdown(BaseModel):
