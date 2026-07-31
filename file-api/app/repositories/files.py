@@ -61,6 +61,49 @@ async def list_by_ids(
     )
 
 
+async def list_recent(
+    conn: DBConnection,
+    project_id: UUID,
+    limit: int,
+    offset: int,
+) -> list[asyncpg.Record]:
+    return await conn.fetch(
+        """
+        SELECT f.*, t.status AS indexing_status
+        FROM files f
+        LEFT JOIN tasks t ON t.id = f.latest_task_id
+        WHERE f.project_id = $1
+        ORDER BY f.created_at DESC
+        LIMIT $2 OFFSET $3
+        """,
+        project_id,
+        limit,
+        offset,
+    )
+
+
+# Counts files present within a project and/or folder (does not account for nested files)
+async def count_by_project_and_folder_id(
+    conn: DBConnection, project_id: UUID, folder_id: UUID | None = None
+) -> int:
+    if folder_id is not None:
+        return (
+            await conn.fetchval(
+                "SELECT COUNT(*) FROM files WHERE project_id = $1 AND folder_id = $2",
+                project_id,
+                folder_id,
+            )
+            or 0
+        )
+
+    return (
+        await conn.fetchval(
+            "SELECT COUNT(*) FROM files WHERE project_id = $1", project_id
+        )
+        or 0
+    )
+
+
 async def set_latest_task(conn: DBConnection, file_id: UUID, task_id: UUID) -> None:
     await conn.execute(
         "UPDATE files SET latest_task_id = $1 WHERE id = $2", task_id, file_id
